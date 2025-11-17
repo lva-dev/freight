@@ -47,7 +47,7 @@ EmptyLineBeforeAccessModifier: Never
 # Indentation
 AccessModifierOffset: -4
 BitFieldColonSpacing: Both
-ContinuationIndentWidth: 2
+ContinuationIndentWidth: 4
 IndentWidth: 4
 IndentAccessModifiers: false
 IndentCaseLabels: false
@@ -93,6 +93,7 @@ BraceWrapping:
   SplitEmptyNamespace: false
   
 # Breaks
+AlwaysBreakBeforeMultilineStrings: true
 BreakAdjacentStringLiterals: true
 BreakAfterAttributes: Never
 BreakBeforeBraces: Attach

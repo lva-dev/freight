@@ -1,41 +1,10 @@
+#include "pch.h"
+
 #include "compiler.h"
 
-#include <sys/wait.h>
-#include <system_error>
-
-#define _POSIX_C_SOURCE 200809L
-#include <unistd.h>
-
-namespace {
-	class Process {
-	private:
-		pid_t _pid;
-
-		Process(pid_t pid) : _pid {pid} {};
-	public:
-		Process(const Process&) = delete;
-		Process(Process&&) = delete;
-		Process& operator=(const Process&) = default;
-		Process& operator=(Process&&) = default;
-
-		/**
-		 * @brief Starts a new process.
-		 * @param name
-		 * @param args
-		 * @return a process object that represents the state of the new
-		 * process.
-		 */
-		static Process start(const std::filesystem::path& path,
-			std::vector<std::string>& args);
-
-		/**
-		 * @brief Waits for this process to end, returning its exit code
-		 * after it terminates.
-		 * @return the exit code of this process
-		 */
-		int wait_for();
-	};
-} // namespace
+//////////////////////////////////////////////////
+/// freight::Process
+//////////////////////////////////////////////////
 
 static std::vector<char *> to_exec_args(const std::vector<std::string>& args) {
 	std::vector<char *> c_args;
@@ -49,7 +18,7 @@ static std::vector<char *> to_exec_args(const std::vector<std::string>& args) {
 	return c_args;
 }
 
-Process Process::start(const std::filesystem::path& name,
+freight::Process freight::Process::start(const std::filesystem::path& name,
 	std::vector<std::string>& args) {
 	pid_t pid = fork();
 
@@ -76,7 +45,7 @@ Process Process::start(const std::filesystem::path& name,
 	return Process {pid};
 }
 
-int Process::wait_for() {
+int freight::Process::wait_for() {
 	int proc_status;
 	int wait_result = waitpid(_pid, &proc_status, 0);
 	if (wait_result != _pid) {
@@ -89,59 +58,47 @@ int Process::wait_for() {
 	return exitcode;
 }
 
-std::vector<std::string> freight::GnuCompatibleCompiler::build_args(
-	const CompileOpts& opts) {
-	if (opts.action.link && opts.action.comp)
-		throw std::invalid_argument {""};
+//////////////////////////////////////////////////
+/// freight::Compiler
+/// freight::GnuCompatibleCompiler
+/// freight::ClangCompiler
+/// freight::GnuCompiler
+//////////////////////////////////////////////////
 
-	std::vector<std::string> args;
+std::vector<std::string> freight::GnuCompatibleCompiler::build_options(
+	const CompilerOpts& opts) {
+	std::vector<std::string> options;
 
 	// Standard
-	args.push_back(std::format("-std=c++", opts.std));
+	options.push_back(std::format("-std=c++", opts.std));
 
 	// Warnings
 	if (opts.warnings.all)
-		args.push_back("-Wall");
+		options.push_back("-Wall");
 
 	if (opts.warnings.extra)
-		args.push_back("-Wextra");
+		options.push_back("-Wextra");
 
 	if (opts.warnings.pedantic)
-		args.push_back("-pedantic");
-
-	// Action
-	if (opts.action.comp)
-		args.push_back("-c");
+		options.push_back("-pedantic");
 
 	// Debug info
 	if (opts.debug_info)
-		args.push_back("-g");
+		options.push_back("-g");
 
 	// Sanitizer
 	if (opts.sanitizer.address)
-		args.push_back("-fsanitize=address");
+		options.push_back("-fsanitize=address");
 
-	return args;
+	return options;
 }
 
-bool freight::GnuCompatibleCompiler::compile(const CompileOpts& opts,
-	std::filesystem::path in_file) {
-	// add arguments
-	auto args = build_args(opts);
-
-	if (!opts.output_dir.empty()) {
-		auto out_file_name = in_file.stem().concat(".o");
-		auto out_file_path = opts.output_dir / out_file_name;
-		args.push_back("-o");
-		args.push_back(out_file_path);
-	}
-
-	args.push_back(in_file);
-
-	// execute compiler as new process
-	auto process = Process::start(_path, args);
-	int exitcode = process.wait_for();
-	return exitcode != 0;
+std::vector<std::string> freight::GnuCompatibleCompiler::build_out_file_option(
+	const std::filesystem::path& out_file_path) {
+	std::vector<std::string> options;
+	options.push_back("-o");
+	options.push_back(out_file_path.string());
+	return options;
 }
 
 /**
@@ -151,11 +108,14 @@ bool freight::GnuCompatibleCompiler::compile(const CompileOpts& opts,
  * @param file the file to search for
  * @return the full path of the file, or an empty path
  */
-std::filesystem::path search_path_variable(std::filesystem::path file) {
-	const std::string_view PATH = std::getenv("PATH");
+static std::filesystem::path search_path_variable(std::filesystem::path file) {
+	auto PATH = std::getenv("PATH");
+	if (PATH == nullptr) {
+		return {};
+	}
 
 	std::filesystem::path dir;
-	for (char ch : PATH) {
+	for (char ch : std::string_view {PATH}) {
 		if (ch != ':') {
 			dir += ch;
 		} else if (!dir.empty()) {
@@ -173,27 +133,30 @@ std::filesystem::path search_path_variable(std::filesystem::path file) {
 
 std::unique_ptr<freight::ClangCompiler> freight::ClangCompiler::find() {
 	auto path = search_path_variable("clang++");
-	if (path.empty())
+	if (path.empty()) {
 		return {};
-	else
+	} else {
 		return std::unique_ptr<ClangCompiler> {new ClangCompiler {path}};
+	}
 }
 
 std::unique_ptr<freight::GnuCompiler> freight::GnuCompiler::find() {
 	auto path = search_path_variable("g++");
-	if (path.empty())
+	if (path.empty()) {
 		return {};
-	else
+	} else {
 		return std::unique_ptr<GnuCompiler> {new GnuCompiler {path}};
+	}
 }
 
 std::unique_ptr<freight::Compiler> freight::Compiler::from_path(
 	const std::filesystem::path& path) {
-	if (path == "clang++" || path == "g++")
+	if (path == "clang++" || path == "g++") {
 		return std::unique_ptr<GnuCompatibleCompiler> {
 			new GnuCompatibleCompiler {path}};
-	else
+	} else {
 		return {};
+	}
 }
 
 std::unique_ptr<freight::Compiler> freight::Compiler::get() {
@@ -212,4 +175,19 @@ std::unique_ptr<freight::Compiler> freight::Compiler::get() {
 		return gxx;
 	else
 		return {};
+}
+
+bool freight::Compiler::compile(const CompilerOpts& opts,
+	const std::filesystem::path& out_file,
+	const std::filesystem::path& in_file) {
+	namespace fs = std::filesystem;
+
+	// add options/arguments
+	auto args = build_options(opts);
+	args.append_range(build_out_file_option(out_file));
+	args.push_back(fs::current_path() / in_file);
+
+	// invoke compiler
+	auto process = Process::start(_path, args);
+	return process.wait_for() != 0;
 }

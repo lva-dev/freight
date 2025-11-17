@@ -24,5 +24,13 @@ target_link_options(${TARGET} PRIVATE
     -fsanitize=address
 )
 
+target_precompile_headers(${TARGET} PRIVATE
+    src/pch.h
+)
+
 add_subdirectory(src/vendor/tomlplusplus)
 target_link_libraries(${TARGET} PRIVATE tomlplusplus::tomlplusplus)
+
+find_package(docopt COMPONENTS CXX REQUIRED)
+target_include_directories(${TARGET} PRIVATE ${DOCOPT_INCLUDE_DIRS})
+target_link_libraries(${TARGET} PRIVATE docopt)

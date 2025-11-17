@@ -1,25 +1,31 @@
 [
 {
   "directory": "/home/lacer/projects/lang.cpp/freight/build",
-  "command": "/usr/sbin/c++  -I/home/lacer/projects/lang.cpp/freight/src/vendor/tomlplusplus/include -g -std=gnu++23 -Wall -Wextra -pedantic -g -o CMakeFiles/freight.dir/src/main.cpp.o -c /home/lacer/projects/lang.cpp/freight/src/main.cpp",
+  "command": "/usr/sbin/c++  -I/home/lacer/projects/lang.cpp/freight/src/vendor/tomlplusplus/include -isystem /usr/include/docopt -g -std=gnu++23 -Wall -Wextra -pedantic -g -Winvalid-pch -x c++-header -include /home/lacer/projects/lang.cpp/freight/build/CMakeFiles/freight.dir/cmake_pch.hxx -o CMakeFiles/freight.dir/cmake_pch.hxx.gch -c /home/lacer/projects/lang.cpp/freight/build/CMakeFiles/freight.dir/cmake_pch.hxx.cxx",
+  "file": "/home/lacer/projects/lang.cpp/freight/build/CMakeFiles/freight.dir/cmake_pch.hxx.cxx",
+  "output": "CMakeFiles/freight.dir/cmake_pch.hxx.gch"
+},
+{
+  "directory": "/home/lacer/projects/lang.cpp/freight/build",
+  "command": "/usr/sbin/c++  -I/home/lacer/projects/lang.cpp/freight/src/vendor/tomlplusplus/include -isystem /usr/include/docopt -g -std=gnu++23 -Wall -Wextra -pedantic -g -Winvalid-pch -include /home/lacer/projects/lang.cpp/freight/build/CMakeFiles/freight.dir/cmake_pch.hxx -o CMakeFiles/freight.dir/src/main.cpp.o -c /home/lacer/projects/lang.cpp/freight/src/main.cpp",
   "file": "/home/lacer/projects/lang.cpp/freight/src/main.cpp",
   "output": "CMakeFiles/freight.dir/src/main.cpp.o"
 },
 {
   "directory": "/home/lacer/projects/lang.cpp/freight/build",
-  "command": "/usr/sbin/c++  -I/home/lacer/projects/lang.cpp/freight/src/vendor/tomlplusplus/include -g -std=gnu++23 -Wall -Wextra -pedantic -g -o CMakeFiles/freight.dir/src/new.cpp.o -c /home/lacer/projects/lang.cpp/freight/src/new.cpp",
+  "command": "/usr/sbin/c++  -I/home/lacer/projects/lang.cpp/freight/src/vendor/tomlplusplus/include -isystem /usr/include/docopt -g -std=gnu++23 -Wall -Wextra -pedantic -g -Winvalid-pch -include /home/lacer/projects/lang.cpp/freight/build/CMakeFiles/freight.dir/cmake_pch.hxx -o CMakeFiles/freight.dir/src/new.cpp.o -c /home/lacer/projects/lang.cpp/freight/src/new.cpp",
   "file": "/home/lacer/projects/lang.cpp/freight/src/new.cpp",
   "output": "CMakeFiles/freight.dir/src/new.cpp.o"
 },
 {
   "directory": "/home/lacer/projects/lang.cpp/freight/build",
-  "command": "/usr/sbin/c++  -I/home/lacer/projects/lang.cpp/freight/src/vendor/tomlplusplus/include -g -std=gnu++23 -Wall -Wextra -pedantic -g -o CMakeFiles/freight.dir/src/build.cpp.o -c /home/lacer/projects/lang.cpp/freight/src/build.cpp",
+  "command": "/usr/sbin/c++  -I/home/lacer/projects/lang.cpp/freight/src/vendor/tomlplusplus/include -isystem /usr/include/docopt -g -std=gnu++23 -Wall -Wextra -pedantic -g -Winvalid-pch -include /home/lacer/projects/lang.cpp/freight/build/CMakeFiles/freight.dir/cmake_pch.hxx -o CMakeFiles/freight.dir/src/build.cpp.o -c /home/lacer/projects/lang.cpp/freight/src/build.cpp",
   "file": "/home/lacer/projects/lang.cpp/freight/src/build.cpp",
   "output": "CMakeFiles/freight.dir/src/build.cpp.o"
 },
 {
   "directory": "/home/lacer/projects/lang.cpp/freight/build",
-  "command": "/usr/sbin/c++  -I/home/lacer/projects/lang.cpp/freight/src/vendor/tomlplusplus/include -g -std=gnu++23 -Wall -Wextra -pedantic -g -o CMakeFiles/freight.dir/src/compiler.cpp.o -c /home/lacer/projects/lang.cpp/freight/src/compiler.cpp",
+  "command": "/usr/sbin/c++  -I/home/lacer/projects/lang.cpp/freight/src/vendor/tomlplusplus/include -isystem /usr/include/docopt -g -std=gnu++23 -Wall -Wextra -pedantic -g -Winvalid-pch -include /home/lacer/projects/lang.cpp/freight/build/CMakeFiles/freight.dir/cmake_pch.hxx -o CMakeFiles/freight.dir/src/compiler.cpp.o -c /home/lacer/projects/lang.cpp/freight/src/compiler.cpp",
   "file": "/home/lacer/projects/lang.cpp/freight/src/compiler.cpp",
   "output": "CMakeFiles/freight.dir/src/compiler.cpp.o"
 }

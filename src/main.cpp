@@ -1,21 +1,6 @@
-#include <string>
-#define _POSIX_C_SOURCE 200809L
+#include "pch.h"
 
-#include <algorithm>
-#include <cstdio>
-#include <cstdlib>
-#include <filesystem>
-#include <format>
-#include <fstream>
-#include <iostream>
-#include <optional>
-#include <print>
-#include <stdexcept>
-#include <string_view>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <vector>
+#include "cli.h"
 
 // class Project
 // {
@@ -102,101 +87,9 @@
 //     }
 // };
 
-std::string help_message() { return {}; }
+int main(int argc, char **argv) {
+	Cli cli;
+	cli.start(argc, argv);
 
-void print_help() {}
-
-const auto USAGE_FOR_DOCOPTS = R"(
-Usage:
-  freight new <project>
-  freight build [-r|--release]
-  freight run
-
-Options:
-  -h --help  
-)";
-
-int build_tool_main()
-{
-    // if (args.size() == 0)
-    // {
-    //     std::cout << freight::help_message();
-    //     return EXIT_SUCCESS;
-    // }
-
-    // if (args.size() > 0)
-    // {
-    //     if (index_of(args, "--help") != -1)
-    //     {
-    //         std::cout << freight::help_message();
-    //         return EXIT_SUCCESS;
-    //     }
-    //     else if (args[1] == "new")
-    //     {
-    //         if (args.size() < 2 || args.size() > 2)
-    //         {
-    //             if (args.size() < 2)
-    //             {
-    //                 std::cerr << "Not enough arguments";
-    //             }
-    //             else if (args.size() > 2)
-    //             {
-    //                 std::cerr << "Too many arguments";
-    //             }
-
-    //             std::cerr << "Command syntax: cppbt new <projectname>";
-    //             return EXIT_FAILURE;
-    //         }
-
-    //         auto project = freight::Project::new_project(args[2]);
-    //         if (!project.has_value())
-    //         {
-    //             return EXIT_FAILURE;
-    //         }
-    //     }
-    //     else if (args[1] == "build")
-    //     {
-    //         if (args.size() > 2)
-    //         {
-    //             std::cerr << "Too many arguments";
-    //             return EXIT_FAILURE;
-    //         }
-
-    //         auto project =
-    //             freight::Project::load_existing(std::filesystem::current_path());
-    //         if (!project.has_value())
-    //         {
-    //             return EXIT_FAILURE;
-    //         }
-
-    //         if (!project->build())
-    //         {
-    //             return EXIT_FAILURE;
-    //         }
-    //     }
-    //     else if (args[1] == "run")
-    //     {
-    //         if (args.size() > 2)
-    //         {
-    //             std::cerr << "Too many arguments";
-    //             return EXIT_FAILURE;
-    //         }
-
-    //         auto project =
-    //             freight::Project::load_existing(std::filesystem::current_path());
-    //         if (!project.has_value())
-    //         {
-    //             return EXIT_FAILURE;
-    //         }
-
-    //         if (!project->run())
-    //         {
-    //             return EXIT_FAILURE;
-    //         }
-    //     }
-    // }
-
-    return EXIT_SUCCESS;
+	return EXIT_FAILURE;
 }
-
-int main(int argc, char **argv) { return EXIT_FAILURE; }

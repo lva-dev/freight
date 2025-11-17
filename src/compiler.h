@@ -2,19 +2,16 @@
 
 #include <filesystem>
 #include <memory>
+#include <ranges>
 #include <vector>
 
 namespace freight {
-	struct CompileOpts {
-	public:
+	/**
+	 * @brief Options to pass to C++ compilers when invoked through
+	 * `Compiler.compile()` and `Compiler.link()`.
+	 */
+	struct CompilerOpts {
 		std::string std = "c++20";
-		std::filesystem::path output_dir = std::filesystem::current_path();
-		bool debug_info = false;
-
-		struct {
-			bool link = false;
-			bool comp = false;
-		} action {};
 
 		struct {
 			bool all = false;
@@ -22,11 +19,17 @@ namespace freight {
 			bool pedantic = false;
 		} warnings {};
 
+		bool debug_info = false;
+
 		struct {
 			bool address = false;
 		} sanitizer {};
 	};
 
+	/**
+	 * @brief An interface for a C++ compiler.
+	 *
+	 */
 	class Compiler {
 	private:
 		/**
@@ -42,7 +45,19 @@ namespace freight {
 		std::filesystem::path _path;
 
 		Compiler(const std::filesystem::path& path) : _path {path} {}
+
+		virtual std::vector<std::string> build_options(
+			const CompilerOpts& opts) = 0;
+		virtual std::vector<std::string> build_out_file_option(
+			const std::filesystem::path& out_file) = 0;
 	public:
+		Compiler() = delete;
+		Compiler(const Compiler&) = delete;
+		Compiler(Compiler&&) = default;
+		Compiler& operator=(const Compiler&) = delete;
+		Compiler& operator=(Compiler&&) = default;
+		virtual ~Compiler() = default;
+
 		/**
 		 * @brief Returns a compiler object for a C++ compiler on this system.
 		 * If a compiler couldn't be found, returns a null pointer.
@@ -51,25 +66,31 @@ namespace freight {
 		 */
 		static std::unique_ptr<Compiler> get();
 
-		virtual ~Compiler() = default;
-		Compiler() = delete;
-		Compiler(const Compiler&) = delete;
-		Compiler(Compiler&&) = default;
-		Compiler& operator=(const Compiler&) = delete;
-		Compiler& operator=(Compiler&&) = default;
+		/**
+		 * @brief Compiles the given file to an object file.
+		 * @param opts
+		 * @param in_file
+		 * @return true
+		 * @return false
+		 */
+		bool compile(const CompilerOpts& opts,
+			const std::filesystem::path& out_file,
+			const std::filesystem::path& in_file);
 
-		virtual bool compile(const CompileOpts& opts,
-			std::filesystem::path in_file) = 0;
+		template<class Paths>
+			requires std::ranges::range<std::filesystem::path>
+		bool link(const CompilerOpts& opts,
+			const std::filesystem::path& out_file,
+			const Paths& in_files);
 	};
 
 	class GnuCompatibleCompiler : public Compiler {
 	protected:
 		using Compiler::Compiler;
-	private:
-		std::vector<std::string> build_args(const CompileOpts& opts);
-	public:
-		virtual bool compile(const CompileOpts& opts,
-			std::filesystem::path in_file) override;
+		virtual std::vector<std::string> build_options(
+			const CompilerOpts& opts) override;
+		virtual std::vector<std::string> build_out_file_option(
+			const std::filesystem::path& out_file) override;
 	};
 
 	class ClangCompiler : public GnuCompatibleCompiler {
@@ -97,4 +118,59 @@ namespace freight {
 		 */
 		static std::unique_ptr<GnuCompiler> find();
 	};
+
+	/**
+	 * @brief
+	 *
+	 */
+	class Process {
+	private:
+		pid_t _pid;
+
+		Process(pid_t pid) : _pid {pid} {};
+	public:
+		Process(const Process&) = delete;
+		Process(Process&&) = delete;
+		Process& operator=(const Process&) = default;
+		Process& operator=(Process&&) = default;
+
+		/**
+		 * @brief Starts a new process.
+		 * @param name
+		 * @param args
+		 * @return a process object that represents the state of the new
+		 * process.
+		 */
+		static Process start(const std::filesystem::path& path,
+			std::vector<std::string>& args);
+
+		/**
+		 * @brief Waits for this process to end, returning its exit code
+		 * after it terminates.
+		 * @return the exit code of this process
+		 */
+		int wait_for();
+	};
 } // namespace freight
+
+template<class Paths>
+	requires std::ranges::range<std::filesystem::path>
+bool freight::Compiler::link(const CompilerOpts& opts,
+	const std::filesystem::path& out_file,
+	const Paths& in_files) {
+	namespace fs = std::filesystem;
+
+	// add options
+	auto args = build_options(opts);
+    args.append_range(build_out_file_option(out_file));
+
+	// add source files
+	auto cwd = fs::current_path();
+	for (auto file : in_files) {
+		args.push_back(cwd / file);
+	}
+
+	// invoke compiler
+	auto process = Process::start(_path, args);
+	return process.wait_for() != 0;
+}

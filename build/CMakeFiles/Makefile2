@@ -107,12 +107,12 @@ src/vendor/tomlplusplus/clean:
 CMakeFiles/freight.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/freight.dir/build.make CMakeFiles/freight.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/freight.dir/build.make CMakeFiles/freight.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/lacer/projects/lang.cpp/freight/build/CMakeFiles --progress-num=1,2,3,4,5 "Built target freight"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/lacer/projects/lang.cpp/freight/build/CMakeFiles --progress-num=1,2,3,4,5,6 "Built target freight"
 .PHONY : CMakeFiles/freight.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/freight.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/lacer/projects/lang.cpp/freight/build/CMakeFiles 5
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/lacer/projects/lang.cpp/freight/build/CMakeFiles 6
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/freight.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/lacer/projects/lang.cpp/freight/build/CMakeFiles 0
 .PHONY : CMakeFiles/freight.dir/rule
@@ -124,7 +124,7 @@ freight: CMakeFiles/freight.dir/rule
 # codegen rule for target.
 CMakeFiles/freight.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/freight.dir/build.make CMakeFiles/freight.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/lacer/projects/lang.cpp/freight/build/CMakeFiles --progress-num=1,2,3,4,5 "Finished codegen for target freight"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/lacer/projects/lang.cpp/freight/build/CMakeFiles --progress-num=1,2,3,4,5,6 "Finished codegen for target freight"
 .PHONY : CMakeFiles/freight.dir/codegen
 
 # clean rule for target.

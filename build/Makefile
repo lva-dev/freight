@@ -129,6 +129,21 @@ freight/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/freight.dir/build.make CMakeFiles/freight.dir/build
 .PHONY : freight/fast
 
+# target to build an object file
+cmake_pch.hxx.gch:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/freight.dir/build.make CMakeFiles/freight.dir/cmake_pch.hxx.gch
+.PHONY : cmake_pch.hxx.gch
+
+# target to preprocess a source file
+cmake_pch.hxx.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/freight.dir/build.make CMakeFiles/freight.dir/cmake_pch.hxx.i
+.PHONY : cmake_pch.hxx.i
+
+# target to generate assembly for a file
+cmake_pch.hxx.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/freight.dir/build.make CMakeFiles/freight.dir/cmake_pch.hxx.s
+.PHONY : cmake_pch.hxx.s
+
 src/build.o: src/build.cpp.o
 .PHONY : src/build.o
 
@@ -234,6 +249,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... freight"
+	@echo "... cmake_pch.hxx.gch"
+	@echo "... cmake_pch.hxx.i"
+	@echo "... cmake_pch.hxx.s"
 	@echo "... src/build.o"
 	@echo "... src/build.i"
 	@echo "... src/build.s"
