@@ -1,8 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"/home/lacer/projects/lang.cpp/freight/build/cmake_install.cmake",
-		"/home/lacer/projects/lang.cpp/freight/build/src/vendor/tomlplusplus/cmake_install.cmake"
-	],
-	"Parallel" : false
-}

@@ -1,5 +1,0 @@
-/home/lacer/projects/lang.cpp/freight/build/CMakeFiles/freight.dir
-/home/lacer/projects/lang.cpp/freight/build/CMakeFiles/edit_cache.dir
-/home/lacer/projects/lang.cpp/freight/build/CMakeFiles/rebuild_cache.dir
-/home/lacer/projects/lang.cpp/freight/build/src/vendor/tomlplusplus/CMakeFiles/edit_cache.dir
-/home/lacer/projects/lang.cpp/freight/build/src/vendor/tomlplusplus/CMakeFiles/rebuild_cache.dir
