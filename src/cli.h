@@ -95,7 +95,7 @@ namespace freight {
 
 		void invoke_new(std::vector<std::string_view>& args,
 			std::size_t& arg_index) {
-			namespace fs = std::filesystem;
+			using namespace std::filesystem;
 
 			if (arg_index >= args.size()) {
 				err::fail("the following arguments were not provided: <PATH>")
@@ -113,9 +113,9 @@ namespace freight {
 
 			io::println("    \033[32mCreating\033[m binary `{}` project", name);
 
-			if (fs::exists(path)) {
+			if (exists(path)) {
 				err::fail("destination `{}` already exists",
-					fs::absolute(path).string())
+					absolute(path).string())
 					.exit();
 			}
 

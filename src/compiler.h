@@ -157,17 +157,14 @@ template<class Paths>
 bool freight::Compiler::link(const CompilerOpts& opts,
 	const std::filesystem::path& out_file,
 	const Paths& in_files) {
-	namespace fs = std::filesystem;
+	using namespace std::filesystem;
 
 	// add options
 	auto args = build_options(opts);
-    args.append_range(build_out_file_option(out_file));
+	args.append_range(build_out_file_option(out_file));
 
 	// add source files
-	auto cwd = fs::current_path();
-	for (auto file : in_files) {
-		args.push_back(cwd / file);
-	}
+    args.append_range(in_files);
 
 	// invoke compiler
 	auto process = Process::start(_path, args);

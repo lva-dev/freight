@@ -22,14 +22,13 @@ namespace freight {
 	};
 
 	void create_manifest_file(const MakeOptions& opts) {
+		using namespace std::filesystem;
+
 		Manifest manifest;
 		auto manifest_path = opts.path / Manifest::FILENAME;
 
+		// if the parent dir shouldn't exist, manifest file shouldn't exist
 		assert(!exists(manifest_path));
-
-		manifest.name = opts.name;
-		manifest.standard = opts.standard;
-		manifest.version = opts.version;
 
 		std::ofstream stream {manifest_path};
 		if (!stream.is_open()) {
@@ -40,9 +39,9 @@ namespace freight {
 		}
 
 		stream << "[project]\n";
-		stream << std::format("name = \"{}\"\n", manifest.name);
-		stream << std::format("version = \"{}\"\n", manifest.version);
-		stream << std::format("standard = \"{}\"\n", manifest.standard);
+		stream << std::format("name = \"{}\"\n", opts.name);
+		stream << std::format("version = \"{}\"\n", opts.version);
+		stream << std::format("standard = \"{}\"\n", opts.standard);
 	}
 
 	void create_source_files(const MakeOptions& opts) {

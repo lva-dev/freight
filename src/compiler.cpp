@@ -180,12 +180,12 @@ std::unique_ptr<freight::Compiler> freight::Compiler::get() {
 bool freight::Compiler::compile(const CompilerOpts& opts,
 	const std::filesystem::path& out_file,
 	const std::filesystem::path& in_file) {
-	namespace fs = std::filesystem;
+        using namespace std::filesystem;
 
 	// add options/arguments
 	auto args = build_options(opts);
 	args.append_range(build_out_file_option(out_file));
-	args.push_back(fs::current_path() / in_file);
+	args.push_back(in_file);
 
 	// invoke compiler
 	auto process = Process::start(_path, args);

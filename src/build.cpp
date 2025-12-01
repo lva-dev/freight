@@ -20,9 +20,8 @@ using freight::err::fail;
 // std::vector<std::filesystem::path> infiles;
 
 static err::Failure fail_parsing_manifest(const std::filesystem::path& file) {
-	namespace fs = std::filesystem;
-
-	return fail("failed to parse manifest at `{}`", fs::absolute(file).string());
+	using namespace std::filesystem;
+	return fail("failed to parse manifest at `{}`", absolute(file).string());
 }
 
 static std::string parse_name(const toml::node_view<toml::node>& project_table,
@@ -136,16 +135,16 @@ static Manifest parse_manifest(const std::filesystem::path& path) {
 }
 
 static Manifest load(const std::filesystem::path& dir) {
-	namespace fs = std::filesystem;
-
-	auto manifest_path = fs::absolute(dir / Manifest::FILENAME);
-	if (!fs::exists(manifest_path)) {
+    using namespace std::filesystem;
+    
+	auto manifest_path = absolute(dir / Manifest::FILENAME);
+	if (!exists(manifest_path)) {
 		fail("could not find `Proj.toml` in `{}`",
-			fs::absolute(dir.string()).string())
+			absolute(dir.string()).string())
 			.exit();
 	}
 
-	if (!fs::exists(dir / "src")) {
+	if (!exists(dir / "src")) {
 		fail_parsing_manifest(manifest_path)
 			.cause("no target available\ndirectory src must be present")
 			.exit();
@@ -155,8 +154,8 @@ static Manifest load(const std::filesystem::path& dir) {
 }
 
 bool build(const BuildOptions& opts) {
-	namespace fs = std::filesystem;
-
+    using namespace std::filesystem;
+    
 	Manifest manifest = load(opts.path);
 
 	auto compiler = freight::Compiler::get();
@@ -166,18 +165,18 @@ bool build(const BuildOptions& opts) {
 			.exit();
 	}
 
-	fs::path target_dir = opts.path / "target";
-	fs::path int_dir = target_dir / "build";
-	fs::path src = opts.path / "src";
+	path target_dir = opts.path / "target";
+	path int_dir = target_dir / "build";
+	path src = opts.path / "src";
 
 	CompilerOpts compiler_opts {.std = manifest.standard};
 
 	// compile source files
-	std::vector<fs::path> obj_files;
+	std::vector<path> obj_files;
 	bool all_successful = true;
-	auto src_it = fs::recursive_directory_iterator {src};
+	auto src_it = recursive_directory_iterator {src};
 	for (auto src_file : src_it) {
-		auto obj_file = int_dir / fs::relative(src_file.path() / ".o");
+		auto obj_file = int_dir / relative(src_file.path() / ".o");
 		obj_files.push_back(obj_file);
 		bool success = compiler->compile(compiler_opts, obj_file, src_file);
 		all_successful = all_successful && success;
