@@ -4,6 +4,7 @@
 #include <format>
 #include <print>
 #include <string_view>
+#include <utility>
 
 namespace freight {
 	namespace io {
@@ -60,7 +61,6 @@ namespace freight {
 
 		class Failure {
 		private:
-			bool _called_exit = false;
 		public:
 			Failure() = default;
 			Failure(const Failure&) = default;
@@ -69,12 +69,9 @@ namespace freight {
 			Failure& operator=(Failure&&) = default;
 
 			~Failure() {
-#ifndef NDEBUG
-				if (!_called_exit)
-					assert(
-						"Failure.exit() was not called for this Failure "
-						"object");
-#endif
+				assert(
+					"Failure.exit() was not called for this Failure "
+					"object");
 			}
 
 			Failure& cause(std::string_view cause) {
@@ -82,12 +79,7 @@ namespace freight {
 				return *this;
 			}
 
-			[[noreturn]] void exit() {
-#ifndef NDEBUG
-				_called_exit = true;
-#endif
-				std::exit(FAILURE_EXIT_CODE);
-			}
+			[[noreturn]] void exit() { std::exit(FAILURE_EXIT_CODE); }
 		};
 
 		/**
@@ -98,6 +90,18 @@ namespace freight {
 		 */
 		inline Failure fail(std::string_view message) {
 			io::error(message);
+			return Failure();
+		}
+
+        /**
+		 * @brief Exits the program with exit code 1 after printing an error
+		 * message (terminated with a new line) to stderr. After printing,
+		 * invokes `std::exit(1)`.
+		 * @param message the message to print
+		 */
+        template<class... Args>
+		inline Failure fail(std::format_string<Args...> fmt, Args&&...args) {
+			io::error(std::format(fmt, std::forward<Args>(args)...));
 			return Failure();
 		}
 	} // namespace err

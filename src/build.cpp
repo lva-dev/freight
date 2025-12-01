@@ -3,8 +3,11 @@
 #include <cctype>
 #include <filesystem>
 #include <string>
+#include <string_view>
+#include <unordered_set>
 #include <vector>
 
+#include "commands.h"
 #include "compiler.h"
 #include "io.h"
 #include "manifest.h"
@@ -19,8 +22,7 @@ using freight::err::fail;
 static err::Failure fail_parsing_manifest(const std::filesystem::path& file) {
 	namespace fs = std::filesystem;
 
-	return fail(std::format(
-		"failed to parse manifest at `{}`", fs::absolute(file).string()));
+	return fail("failed to parse manifest at `{}`", fs::absolute(file).string());
 }
 
 static std::string parse_name(const toml::node_view<toml::node>& project_table,
@@ -43,24 +45,15 @@ static std::string parse_name(const toml::node_view<toml::node>& project_table,
 	}
 
 	if (std::isdigit(name[0])) {
-		fail(std::format("`project.name`: invalid character `{}` in project "
-						 "name: `{}`, the name cannot start with a digit",
-				 name[0],
-				 name))
+		fail(
+			"`project.name`: invalid character `{}` in project "
+			"name: `{}`, the name cannot start with a digit",
+			name[0],
+			name)
 			.exit();
 	}
 
 	return name;
-}
-
-static bool is_digits(std::string_view str) {
-	for (char ch : str) {
-		if (!std::isdigit(ch)) {
-			return false;
-		}
-	}
-
-	return true;
 }
 
 static bool validate_std(std::string_view str) {
@@ -68,23 +61,10 @@ static bool validate_std(std::string_view str) {
 		return false;
 	}
 
-	std::string num_str {str.substr(3, 5)};
-	if (!is_digits(num_str)) {
-		return false;
-	}
-
-	int num = std::stoi(num_str);
-	switch (num) {
-	case 03:
-	case 11:
-	case 14:
-	case 17:
-	case 20:
-	case 23:
-		return true;
-	default:
-		return false;
-	}
+	std::string_view num_str {str.substr(3, 5)};
+	static const std::unordered_set<std::string_view> STANDARDS = {
+		"03", "11", "14", "17", "20", "23"};
+	return STANDARDS.contains(num_str);
 }
 
 static std::string parse_std(const toml::node_view<toml::node>& project_table,
@@ -160,8 +140,8 @@ static Manifest load(const std::filesystem::path& dir) {
 
 	auto manifest_path = fs::absolute(dir / Manifest::FILENAME);
 	if (!fs::exists(manifest_path)) {
-		fail(std::format("could not find `Proj.toml` in `{}`",
-				 fs::absolute(dir.string()).string()))
+		fail("could not find `Proj.toml` in `{}`",
+			fs::absolute(dir.string()).string())
 			.exit();
 	}
 
@@ -173,11 +153,6 @@ static Manifest load(const std::filesystem::path& dir) {
 
 	return parse_manifest(manifest_path);
 }
-
-struct BuildOptions {
-	std::filesystem::path path;
-	bool release;
-};
 
 bool build(const BuildOptions& opts) {
 	namespace fs = std::filesystem;
@@ -197,7 +172,7 @@ bool build(const BuildOptions& opts) {
 
 	CompilerOpts compiler_opts {.std = manifest.standard};
 
-    // compile source files
+	// compile source files
 	std::vector<fs::path> obj_files;
 	bool all_successful = true;
 	auto src_it = fs::recursive_directory_iterator {src};
@@ -212,7 +187,7 @@ bool build(const BuildOptions& opts) {
 		fail("").exit();
 	}
 
-    // link files
+	// link files
 	compiler->link(compiler_opts, target_dir / manifest.name, obj_files);
 
 	return true;

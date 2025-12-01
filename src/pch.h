@@ -6,11 +6,15 @@
 #include <filesystem>
 #include <format>
 #include <iostream>
+#include <memory>
 #include <optional>
+#include <ranges>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <unordered_set>
+#include <vector>
 
 // Docopt
 #include <docopt/docopt.h>
