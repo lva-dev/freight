@@ -98,7 +98,10 @@ namespace freight {
 			using namespace std::filesystem;
 
 			if (arg_index >= args.size()) {
-				err::fail("the following arguments were not provided: <PATH>")
+				err::fail("the following required arguments were not provided:")
+					.txt("  \033[36m<PATH>\033[m")
+					.ln("\033[32mUsage:\033[m \033[36mfreight new <PATH>\033[m")
+					.ln("For more information, try '\033[36m--help\033[32m'.")
 					.exit();
 			}
 
@@ -114,15 +117,15 @@ namespace freight {
 			io::println("    \033[32mCreating\033[m binary `{}` project", name);
 
 			if (exists(path)) {
-				err::fail("destination `{}` already exists",
-					absolute(path).string())
+				err::fail(
+					"destination `{}` already exists", absolute(path).string())
 					.exit();
 			}
 
 			std::optional<std::string> standard;
 			std::optional<std::string> version;
 
-			NewOrInitOptions opts {path, name};
+			NewOptions opts {path, name};
 
 			new_(opts);
 		}

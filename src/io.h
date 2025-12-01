@@ -43,7 +43,7 @@ namespace freight {
 		 * @param message the message to print
 		 */
 		inline void error(std::string_view message) {
-			eprintln("\033[31merror\033[m: {}", message);
+			eprintln("\033[31merror:\033[m {}", message);
 		}
 
 		/**
@@ -73,7 +73,17 @@ namespace freight {
 					"Failure.exit() was not called for this Failure "
 					"object");
 			}
+            
+            Failure& txt(std::string_view cause) {
+                io::eprintln("{}", cause);
+                return *this;
+            }
 
+            Failure& ln(std::string_view cause) {
+                io::eprintln("\n{}", cause);
+                return *this;
+            }
+            
 			Failure& cause(std::string_view cause) {
 				io::eprintln("\nCaused by:\n  {}", cause);
 				return *this;
