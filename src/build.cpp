@@ -16,9 +16,6 @@
 using namespace freight;
 using freight::err::fail;
 
-// std::filesystem::path outfile = std::filesystem::absolute("main");
-// std::vector<std::filesystem::path> infiles;
-
 static err::Failure fail_parsing_manifest(const std::filesystem::path& file) {
 	using namespace std::filesystem;
 	return fail("failed to parse manifest at `{}`", absolute(file).string());
