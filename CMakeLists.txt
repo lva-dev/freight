@@ -12,21 +12,20 @@ add_executable(${TARGET}
     src/build.cpp
     src/compiler.cpp
 )
-
-target_compile_options(${TARGET} PRIVATE
-    -Wall
-    -Wextra
-    -pedantic
-    -g
-)
-
-target_link_options(${TARGET} PRIVATE
-    -fsanitize=address
-)
-
+    
 target_precompile_headers(${TARGET} PRIVATE
     src/pch.h
 )
+
+if (CMAKE_BUILD_TYPE IN_LIST "Debug;RelWithDebInfo")
+    target_compile_options(${TARGET} PRIVATE
+        -g
+    )
+
+    target_link_options(${TARGET} PRIVATE
+        -fsanitize=address
+    )
+endif()
 
 add_subdirectory(src/vendor/tomlplusplus)
 target_link_libraries(${TARGET} PRIVATE tomlplusplus::tomlplusplus)
