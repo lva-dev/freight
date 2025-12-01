@@ -2,18 +2,26 @@
 
 #include "compiler.h"
 
+#include <exception>
+#include <ranges>
+#include <stdexcept>
+#include <utility>
+
 //////////////////////////////////////////////////
 /// freight::Process
 //////////////////////////////////////////////////
 
-static std::vector<char *> to_exec_args(const std::vector<std::string>& args) {
-	std::vector<char *> c_args;
+freight::Process::~Process() {
+    if (_pid != NO_PID) {
+        std::terminate();
+    }
+}
 
-	for (const auto& str : args) {
-		auto c_str = const_cast<char *>(str.data());
-		c_args.push_back(c_str);
-	}
-
+static std::vector<char *> to_args_for_exec(const std::vector<std::string>& args) {
+	using namespace std::ranges;
+	using namespace std::ranges::views;
+    auto filtered = transform(args, [](const std::string& str) { return const_cast<char *>(str.data()); });
+	std::vector<char *> c_args {filtered.begin(), filtered.end()};
 	c_args.push_back(nullptr);
 	return c_args;
 }
@@ -29,7 +37,7 @@ freight::Process freight::Process::start(const std::filesystem::path& name,
 	if (pid == 0) {
 		// we're in the child process
 		auto path_native = name.c_str();
-		auto exec_args = to_exec_args(args);
+		auto exec_args = to_args_for_exec(args);
 		exec_args.insert(exec_args.begin(), const_cast<char *>(name.c_str()));
 
 		if (name.is_absolute()) {
@@ -169,18 +177,19 @@ std::unique_ptr<freight::Compiler> freight::Compiler::get() {
 		}
 	}
 
-	if (auto clang = ClangCompiler::find(); clang != nullptr)
+	if (auto clang = ClangCompiler::find(); clang != nullptr) {
 		return clang;
-	else if (auto gxx = GnuCompiler::find(); gxx != nullptr)
+	} else if (auto gxx = GnuCompiler::find(); gxx != nullptr) {
 		return gxx;
-	else
+	} else {
 		return {};
+	}
 }
 
 bool freight::Compiler::compile(const CompilerOpts& opts,
 	const std::filesystem::path& out_file,
 	const std::filesystem::path& in_file) {
-        using namespace std::filesystem;
+	using namespace std::filesystem;
 
 	// add options/arguments
 	auto args = build_options(opts);

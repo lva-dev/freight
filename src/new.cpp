@@ -24,10 +24,9 @@ namespace freight {
 	void create_manifest_file(const MakeOptions& opts) {
 		using namespace std::filesystem;
 
-		Manifest manifest;
 		auto manifest_path = opts.path / Manifest::FILENAME;
 
-		// if the parent dir shouldn't exist, manifest file shouldn't exist
+		// manifest file shouldn't exist for either 'new' or 'init'
 		assert(!exists(manifest_path));
 
 		std::ofstream stream {manifest_path};
@@ -82,8 +81,13 @@ namespace freight {
 		}
 	}
 
-	bool make(const MakeOptions& opts) {
-		using namespace std::filesystem;
+	void make(const MakeOptions& opts) {
+		create_manifest_file(opts);
+		create_source_files(opts);
+	}
+
+	void new_(const NewOptions& opts) {
+        using namespace std::filesystem;
 
 		if (!create_directories(opts.path)) {
 			fail("failed to create project `{}` at `{}`",
@@ -91,14 +95,11 @@ namespace freight {
 				opts.path.string())
 				.exit();
 		}
-
-		create_manifest_file(opts);
-		create_source_files(opts);
-
-		return true;
+        
+		init(opts);
 	}
 
-	bool new_(const NewOptions& opts) {
+    void init(const NewOptions& opts) {
 		static const std::string DEFAULT_PROJECT_VERSION = "0.1.0";
 		static const std::string DEFAULT_CXX_STANDARD = "c++20";
 
@@ -109,6 +110,6 @@ namespace freight {
 			opts.version.value_or(DEFAULT_PROJECT_VERSION),
 		};
 
-		return make(makeopts);
+		make(makeopts);
 	}
 } // namespace freight

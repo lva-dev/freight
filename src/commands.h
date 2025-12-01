@@ -10,7 +10,7 @@ namespace freight {
 		bool release;
 	};
 
-	bool build(const BuildOptions& opts);
+	void build(const BuildOptions& opts);
 
 	struct NewOptions {
 		std::filesystem::path path;
@@ -19,5 +19,7 @@ namespace freight {
 		std::optional<std::string> version = {};
 	};
 
-	bool new_(const NewOptions& opts);
+	void new_(const NewOptions& opts);
+
+	void init(const NewOptions& opts);
 } // namespace freight

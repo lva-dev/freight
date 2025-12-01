@@ -124,14 +124,23 @@ namespace freight {
 	 */
 	class Process {
 	private:
+		static constexpr const int NO_PID = -1;
+
 		pid_t _pid;
 
 		Process(pid_t pid) : _pid {pid} {};
 	public:
+		~Process();
 		Process(const Process&) = delete;
-		Process(Process&&) = delete;
-		Process& operator=(const Process&) = default;
-		Process& operator=(Process&&) = default;
+
+		Process(Process&& other) : _pid {std::exchange(other._pid, NO_PID)} {}
+
+		Process& operator=(const Process&) = delete;
+
+		Process& operator=(Process&& other) {
+			_pid = std::exchange(other._pid, NO_PID);
+			return *this;
+		};
 
 		/**
 		 * @brief Starts a new process.
@@ -164,7 +173,7 @@ bool freight::Compiler::link(const CompilerOpts& opts,
 	args.append_range(build_out_file_option(out_file));
 
 	// add source files
-    args.append_range(in_files);
+	args.append_range(in_files);
 
 	// invoke compiler
 	auto process = Process::start(_path, args);

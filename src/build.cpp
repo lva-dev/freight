@@ -153,9 +153,9 @@ static Manifest load(const std::filesystem::path& dir) {
 	return parse_manifest(manifest_path);
 }
 
-bool build(const BuildOptions& opts) {
+void build(const BuildOptions& opts) {
     using namespace std::filesystem;
-    
+
 	Manifest manifest = load(opts.path);
 
 	auto compiler = freight::Compiler::get();
@@ -167,14 +167,14 @@ bool build(const BuildOptions& opts) {
 
 	path target_dir = opts.path / "target";
 	path int_dir = target_dir / "build";
-	path src = opts.path / "src";
+	path src_dir = opts.path / "src";
 
 	CompilerOpts compiler_opts {.std = manifest.standard};
 
 	// compile source files
 	std::vector<path> obj_files;
 	bool all_successful = true;
-	auto src_it = recursive_directory_iterator {src};
+	auto src_it = recursive_directory_iterator {src_dir};
 	for (auto src_file : src_it) {
 		auto obj_file = int_dir / relative(src_file.path() / ".o");
 		obj_files.push_back(obj_file);
@@ -188,6 +188,4 @@ bool build(const BuildOptions& opts) {
 
 	// link files
 	compiler->link(compiler_opts, target_dir / manifest.name, obj_files);
-
-	return true;
 }

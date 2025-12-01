@@ -122,7 +122,7 @@ namespace freight {
 			std::optional<std::string> standard;
 			std::optional<std::string> version;
 
-			NewOptions opts {path, name};
+			NewOrInitOptions opts {path, name};
 
 			new_(opts);
 		}
