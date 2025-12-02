@@ -2,14 +2,9 @@
 #include <filesystem>
 #include <fstream>
 #include <optional>
-#include <print>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
 
 #include "commands.h"
 #include "io.h"
-#include "manifest.h"
 
 using freight::err::fail;
 
@@ -24,7 +19,7 @@ namespace freight {
 	static void create_manifest_file(const MakeOptions& opts) {
 		using namespace std::filesystem;
 
-		auto manifest_path = opts.path / Manifest::FILENAME;
+		auto manifest_path = opts.path / "Proj.toml";
 
 		// manifest file shouldn't exist for either 'new' or 'init'
 		assert(!exists(manifest_path));
