@@ -70,7 +70,9 @@ namespace freight {
 			"    std::println(\"Hello, world!\");\n"
 			"}\n";
 
-		if (std::stod(opts.standard.substr(3)) >= 23) {
+		// TODO: assert that standard is valid
+
+		if (std::stod(opts.standard) >= 23) {
 			stream << MAIN_BINARY_SOURCE_POST_23;
 		} else {
 			stream << MAIN_BINARY_SOURCE_PRE_23;
