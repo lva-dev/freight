@@ -21,7 +21,7 @@ namespace freight {
 		std::string version;
 	};
 
-	void create_manifest_file(const MakeOptions& opts) {
+	static void create_manifest_file(const MakeOptions& opts) {
 		using namespace std::filesystem;
 
 		auto manifest_path = opts.path / Manifest::FILENAME;
@@ -43,7 +43,7 @@ namespace freight {
 		stream << std::format("standard = \"{}\"\n", opts.standard);
 	}
 
-	void create_source_files(const MakeOptions& opts) {
+	static void create_source_files(const MakeOptions& opts) {
 		using namespace std::filesystem;
 
 		auto src = opts.path / "src";
@@ -81,7 +81,7 @@ namespace freight {
 		}
 	}
 
-	void make(const MakeOptions& opts) {
+	static void make(const MakeOptions& opts) {
 		create_manifest_file(opts);
 		create_source_files(opts);
 	}
