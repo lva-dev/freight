@@ -10,7 +10,7 @@
 #include <string_view>
 #include <vector>
 
-#include "commands.h"
+#include "cmds.h"
 #include "io.h"
 
 namespace freight {
@@ -66,11 +66,11 @@ namespace freight {
 			bool found_skip = false;
 			for (; arg_index < args.size(); arg_index++) {
 				std::string_view arg = args[arg_index];
-
-				bool is_definitely_not_an_option = !arg.starts_with("-") ||
-												   arg == "-" ||
-												   (arg == "--" && found_skip);
-				if (is_definitely_not_an_option) {
+                
+                // TODO: transfer this logic into handle_terminating_options
+				bool definitely_not_an_option =
+					!found_skip && (!arg.starts_with("-") || arg == "-");
+				if (definitely_not_an_option) {
 					arg_index++;
 					return arg;
 				}
@@ -82,10 +82,10 @@ namespace freight {
 
 				if (arg.starts_with("--")) {
 					// long option
-					err::fail("invalid option '{}'", args).exit();
+					err::unexpected_arg(arg).more_info().exit();
 				} else {
 					// short option
-					err::fail("invalid option '-{}'", arg[1]).exit();
+					err::unexpected_arg(arg.substr(0, 2)).more_info().exit();
 				}
 			}
 
@@ -98,34 +98,34 @@ namespace freight {
 			using namespace std::filesystem;
 
 			if (arg_index >= args.size()) {
-				err::fail("the following required arguments were not provided:")
-					.txt("  \033[36m<PATH>\033[m")
-					.ln("\033[32mUsage:\033[m \033[36mfreight new <PATH>\033[m")
-					.ln("For more information, try '\033[36m--help\033[32m'.")
+				err::missing_arg("<PATH>")
+					.usage("new <PATH>")
+					.more_info()
 					.exit();
 			}
 
 			if (arg_index + 1 < args.size()) {
-				err::fail("unexpected argument '{}' found", args[arg_index + 1])
+				err::unexpected_arg(args[arg_index + 1])
+					.usage("new <PATH>")
+					.more_info()
 					.exit();
 			}
 
-			std::filesystem::path path = args[arg_index];
-			arg_index++;
+			std::filesystem::path path = args[arg_index++];
 			std::string name = path.filename();
 
 			io::println("    \033[32mCreating\033[m binary `{}` project", name);
 
 			if (exists(path)) {
-				err::fail(
-					"destination `{}` already exists", absolute(path).string())
+				err::destination_exists(path)
+					.msg("Use `freight init` to initialize the directory")
 					.exit();
 			}
 
 			std::optional<std::string> standard;
 			std::optional<std::string> version;
 
-			NewOptions opts {path, name};
+			NewOptions opts {path, name, standard, version};
 
 			new_(opts);
 		}

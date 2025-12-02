@@ -5,22 +5,18 @@
 #include <stdexcept>
 #include <string>
 
-namespace freight
-{
-struct Manifest
-{
-  public:
-    std::string name;
-    std::string standard;
-    std::string version;
+namespace freight {
+	static inline constexpr const std::string MANIFEST_FILENAME = "Proj.toml";
 
-    Manifest() = default;
-    Manifest(const Manifest&) = default;
-    Manifest(Manifest&&) = default;
-    Manifest& operator=(const Manifest&) = default;
-    Manifest& operator=(Manifest&&) = default;
+	struct Manifest {
+		std::string name;
+		std::string standard;
+		std::string version;
 
-    static inline std::filesystem::path FILENAME = "Proj.toml";
-};
-
+		Manifest() = default;
+		Manifest(const Manifest&) = default;
+		Manifest(Manifest&&) = default;
+		Manifest& operator=(const Manifest&) = default;
+		Manifest& operator=(Manifest&&) = default;
+	};
 } // namespace freight

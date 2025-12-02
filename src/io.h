@@ -1,10 +1,10 @@
 #pragma once
 
 #include <cassert>
+#include <filesystem>
 #include <format>
 #include <print>
 #include <string_view>
-#include <utility>
 
 namespace freight {
 	namespace io {
@@ -21,7 +21,7 @@ namespace freight {
 		 */
 		template<class... Args>
 		inline void eprint(std::format_string<Args...> fmt, Args&&...args) {
-			std::print(stderr, fmt, std::forward<Args>(args)...);
+			::std::print(stderr, fmt, std::forward<Args>(args)...);
 		}
 
 		/**
@@ -34,7 +34,7 @@ namespace freight {
 		 */
 		template<class... Args>
 		inline void eprintln(std::format_string<Args...> fmt, Args&&...args) {
-			std::println(stderr, fmt, std::forward<Args>(args)...);
+			::std::println(stderr, fmt, std::forward<Args>(args)...);
 		}
 
 		/**
@@ -52,7 +52,7 @@ namespace freight {
 		 * @param message the message to print
 		 */
 		inline void warning(const std::string_view& message) {
-			std::println(stderr, "\033[38;5;3mwarning\033[m: {}", message);
+			::std::println(stderr, "\033[38;5;3mwarning\033[m: {}", message);
 		}
 	} // namespace io
 
@@ -73,26 +73,33 @@ namespace freight {
 					"Failure.exit() was not called for this Failure "
 					"object");
 			}
-            
-            Failure& txt(std::string_view cause) {
-                io::eprintln("{}", cause);
-                return *this;
-            }
 
-            Failure& ln(std::string_view cause) {
-                io::eprintln("\n{}", cause);
-                return *this;
-            }
-            
+            Failure& msg(std::string_view message) {
+				io::eprintln("\n{}", message);
+				return *this;
+			}
+
 			Failure& cause(std::string_view cause) {
 				io::eprintln("\nCaused by:\n  {}", cause);
+				return *this;
+			}
+
+			Failure& more_info() {
+				io::eprintln(
+					"\nFor more information, try '\033[36m--help\033[32m'.");
+				return *this;
+			}
+
+			Failure& usage(std::string_view usage) {
+				io::eprintln(
+					"\n\033[32mUsage:\033[m \033[36mfreight {}\033[m", usage);
 				return *this;
 			}
 
 			[[noreturn]] void exit() { std::exit(FAILURE_EXIT_CODE); }
 		};
 
-		/**
+        /**
 		 * @brief Exits the program with exit code 1 after printing an error
 		 * message (terminated with a new line) to stderr. After printing,
 		 * invokes `std::exit(1)`.
@@ -103,15 +110,33 @@ namespace freight {
 			return Failure();
 		}
 
-        /**
+		/**
 		 * @brief Exits the program with exit code 1 after printing an error
 		 * message (terminated with a new line) to stderr. After printing,
 		 * invokes `std::exit(1)`.
 		 * @param message the message to print
 		 */
-        template<class... Args>
+		template<class... Args>
 		inline Failure fail(std::format_string<Args...> fmt, Args&&...args) {
 			io::error(std::format(fmt, std::forward<Args>(args)...));
+			return Failure();
+		}
+        
+		inline Failure missing_arg(std::string_view arg) {
+			io::error("the following required arguments were not provided:");
+			io::eprintln("  \033[36m{}\033[m", arg);
+			return Failure();
+		}
+
+		inline Failure unexpected_arg(std::string_view arg) {
+			io::error(std::format("unexpected argument '{}' found", arg));
+			return Failure();
+		}
+
+		inline Failure destination_exists(const std::filesystem::path& path) {
+			using namespace std::filesystem;
+			io::error(std::format(
+				"destination `{}` already exists", absolute(path).string()));
 			return Failure();
 		}
 	} // namespace err

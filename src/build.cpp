@@ -1,19 +1,19 @@
 #include "pch.h"
 
-#include <cctype>
 #include <filesystem>
 #include <string>
 #include <string_view>
 #include <unordered_set>
 #include <vector>
 
-#include "commands.h"
+#include "cmds.h"
 #include "compiler.h"
 #include "io.h"
 #include "manifest.h"
 #include "toml++/toml.hpp"
 
 using namespace freight;
+using namespace freight::io;
 using freight::err::fail;
 
 static err::Failure fail_parsing_manifest(const std::filesystem::path& file) {
@@ -52,27 +52,21 @@ static std::string parse_name(const toml::node_view<toml::node>& project_table,
 	return name;
 }
 
-static bool validate_std(std::string_view str) {
-	if (str.size() != 5 || str.substr(0, 3) != "c++") {
-		return false;
-	}
-
-	std::string_view num_str {str.substr(3, 5)};
+static bool validate_standard(std::string_view str) {
 	static const std::unordered_set<std::string_view> STANDARDS = {
 		"03", "11", "14", "17", "20", "23"};
-	return STANDARDS.contains(num_str);
+	return STANDARDS.contains(str);
 }
 
-static std::string parse_std(const toml::node_view<toml::node>& project_table,
+static std::string parse_standard(
+	const toml::node_view<toml::node>& project_table,
 	const std::filesystem::path& manifest_path) {
 	auto standard_node = project_table["standard"];
 
 	if (!standard_node) {
-		io::warning(
-			"no standard set: defaulting to c++20 while the latest is "
-			"c++2023");
+		warning("no standard set: defaulting to 20 while the latest is 23");
 
-		return "c++20";
+		return "20";
 	}
 
 	if (!standard_node.is_integer()) {
@@ -80,11 +74,11 @@ static std::string parse_std(const toml::node_view<toml::node>& project_table,
 	}
 
 	auto std = standard_node.ref<std::string>();
-	if (!validate_std(std)) {
+	if (!validate_standard(std)) {
 		fail_parsing_manifest(manifest_path)
 			.cause("failed to parse the `standard` key")
-			.cause(std::format("reccommended standard values are `c++17`, "
-							   "`c++20`, or `c++23` but `{}` is unknown",
+			.cause(std::format("reccommended standard values are `17`, "
+							   "`20`, or `23` but `{}` is unknown",
 				std))
 			.exit();
 	}
@@ -125,18 +119,19 @@ static Manifest parse_manifest(const std::filesystem::path& path) {
 	Manifest manifest;
 
 	manifest.name = parse_name(project_table, path);
-	manifest.standard = parse_std(project_table, path);
+	manifest.standard = parse_standard(project_table, path);
 	manifest.version = parse_version(project_table, path);
 
 	return manifest;
 }
 
 static Manifest load(const std::filesystem::path& dir) {
-    using namespace std::filesystem;
-    
-	auto manifest_path = absolute(dir / Manifest::FILENAME);
+	using namespace std::filesystem;
+
+	auto manifest_path = absolute(dir / MANIFEST_FILENAME);
 	if (!exists(manifest_path)) {
-		fail("could not find `Proj.toml` in `{}`",
+		fail("could not find `{}` in `{}`",
+			MANIFEST_FILENAME,
 			absolute(dir.string()).string())
 			.exit();
 	}
@@ -151,7 +146,7 @@ static Manifest load(const std::filesystem::path& dir) {
 }
 
 void build(const BuildOptions& opts) {
-    using namespace std::filesystem;
+	using namespace std::filesystem;
 
 	Manifest manifest = load(opts.path);
 
@@ -180,7 +175,7 @@ void build(const BuildOptions& opts) {
 	}
 
 	if (!all_successful) {
-		fail("").exit();
+		fail("failed to build files").exit();
 	}
 
 	// link files

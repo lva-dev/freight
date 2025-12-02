@@ -3,8 +3,9 @@
 #include <fstream>
 #include <optional>
 
-#include "commands.h"
+#include "cmds.h"
 #include "io.h"
+#include "manifest.h"
 
 using freight::err::fail;
 
@@ -19,7 +20,7 @@ namespace freight {
 	static void create_manifest_file(const MakeOptions& opts) {
 		using namespace std::filesystem;
 
-		auto manifest_path = opts.path / "Proj.toml";
+		auto manifest_path = opts.path / MANIFEST_FILENAME;
 
 		// manifest file shouldn't exist for either 'new' or 'init'
 		assert(!exists(manifest_path));
@@ -82,7 +83,7 @@ namespace freight {
 	}
 
 	void new_(const NewOptions& opts) {
-        using namespace std::filesystem;
+		using namespace std::filesystem;
 
 		if (!create_directories(opts.path)) {
 			fail("failed to create project `{}` at `{}`",
@@ -90,13 +91,13 @@ namespace freight {
 				opts.path.string())
 				.exit();
 		}
-        
+
 		init(opts);
 	}
 
-    void init(const NewOptions& opts) {
+	void init(const NewOptions& opts) {
 		static const std::string DEFAULT_PROJECT_VERSION = "0.1.0";
-		static const std::string DEFAULT_CXX_STANDARD = "c++20";
+		static const std::string DEFAULT_CXX_STANDARD = "20";
 
 		MakeOptions makeopts {
 			opts.path,

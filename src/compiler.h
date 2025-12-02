@@ -11,18 +11,11 @@ namespace freight {
 	 */
 	struct CompilerOpts {
 		std::string std = "c++20";
-
-		struct {
-			bool all = false;
-			bool extra = false;
-			bool pedantic = false;
-		} warnings {};
-
+		bool wall = false;
+		bool wextra = false;
+		bool wpedantic = false;
 		bool debug_info = false;
-
-		struct {
-			bool address = false;
-		} sanitizer {};
+		bool sanitize_address = false;
 	};
 
 	/**
@@ -45,9 +38,9 @@ namespace freight {
 
 		Compiler(const std::filesystem::path& path) : _path {path} {}
 
-		virtual std::vector<std::string> build_options(
+		virtual std::vector<std::string> generate_options(
 			const CompilerOpts& opts) = 0;
-		virtual std::vector<std::string> build_out_file_option(
+		virtual std::vector<std::string> generate_out_file_option(
 			const std::filesystem::path& out_file) = 0;
 	public:
 		Compiler() = delete;
@@ -86,9 +79,9 @@ namespace freight {
 	class GnuCompatibleCompiler : public Compiler {
 	protected:
 		using Compiler::Compiler;
-		virtual std::vector<std::string> build_options(
+		virtual std::vector<std::string> generate_options(
 			const CompilerOpts& opts) override;
-		virtual std::vector<std::string> build_out_file_option(
+		virtual std::vector<std::string> generate_out_file_option(
 			const std::filesystem::path& out_file) override;
 	};
 
@@ -169,8 +162,8 @@ bool freight::Compiler::link(const CompilerOpts& opts,
 	using namespace std::filesystem;
 
 	// add options
-	auto args = build_options(opts);
-	args.append_range(build_out_file_option(out_file));
+	auto args = generate_options(opts);
+	args.append_range(generate_out_file_option(out_file));
 
 	// add source files
 	args.append_range(in_files);

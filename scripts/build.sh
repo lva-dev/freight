@@ -21,7 +21,7 @@ function generate-build-files {
 }
 
 function build {
-	cmake --build build --config "${CMAKE_BUILD_TYPE}"
+	cmake --build build --config "${CMAKE_BUILD_TYPE}" -j "$(nproc)"
 }
 
 function print {

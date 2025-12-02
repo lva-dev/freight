@@ -2,9 +2,9 @@
 
 #include "compiler.h"
 
-#include <exception>
+#include <memory>
 #include <ranges>
-#include <stdexcept>
+#include <system_error>
 #include <utility>
 
 //////////////////////////////////////////////////
@@ -12,15 +12,17 @@
 //////////////////////////////////////////////////
 
 freight::Process::~Process() {
-    if (_pid != NO_PID) {
-        std::terminate();
-    }
+	if (_pid != NO_PID) {
+		std::terminate();
+	}
 }
 
-static std::vector<char *> to_args_for_exec(const std::vector<std::string>& args) {
+static std::vector<char *> to_args_for_exec(
+	const std::vector<std::string>& args) {
 	using namespace std::ranges;
 	using namespace std::ranges::views;
-    auto filtered = transform(args, [](const std::string& str) { return const_cast<char *>(str.data()); });
+	auto filtered = transform(args,
+		[](const std::string& str) { return const_cast<char *>(str.data()); });
 	std::vector<char *> c_args {filtered.begin(), filtered.end()};
 	c_args.push_back(nullptr);
 	return c_args;
@@ -73,35 +75,41 @@ int freight::Process::wait_for() {
 /// freight::GnuCompiler
 //////////////////////////////////////////////////
 
-std::vector<std::string> freight::GnuCompatibleCompiler::build_options(
+std::vector<std::string> freight::GnuCompatibleCompiler::generate_options(
 	const CompilerOpts& opts) {
 	std::vector<std::string> options;
 
 	// Standard
-	options.push_back(std::format("-std=c++", opts.std));
+	options.push_back(std::format("-std={}", opts.std));
 
 	// Warnings
-	if (opts.warnings.all)
+	if (opts.wall) {
 		options.push_back("-Wall");
+	}
 
-	if (opts.warnings.extra)
+	if (opts.wextra) {
 		options.push_back("-Wextra");
+	}
 
-	if (opts.warnings.pedantic)
+	if (opts.wpedantic) {
 		options.push_back("-pedantic");
+	}
 
 	// Debug info
-	if (opts.debug_info)
+	if (opts.debug_info) {
 		options.push_back("-g");
+	}
 
 	// Sanitizer
-	if (opts.sanitizer.address)
+	if (opts.sanitize_address) {
 		options.push_back("-fsanitize=address");
+	}
 
 	return options;
 }
 
-std::vector<std::string> freight::GnuCompatibleCompiler::build_out_file_option(
+std::vector<std::string>
+freight::GnuCompatibleCompiler::generate_out_file_option(
 	const std::filesystem::path& out_file_path) {
 	std::vector<std::string> options;
 	options.push_back("-o");
@@ -123,9 +131,9 @@ static std::filesystem::path search_path_variable(std::filesystem::path file) {
 	}
 
 	std::filesystem::path dir;
-	for (char ch : std::string_view {PATH}) {
-		if (ch != ':') {
-			dir += ch;
+	for (char *ch = PATH; *ch != '\0'; ch++) {
+		if (*ch != ':') {
+			dir += *ch;
 		} else if (!dir.empty()) {
 			auto potential_file = dir / file;
 			if (std::filesystem::exists(potential_file)) {
@@ -159,7 +167,7 @@ std::unique_ptr<freight::GnuCompiler> freight::GnuCompiler::find() {
 
 std::unique_ptr<freight::Compiler> freight::Compiler::from_path(
 	const std::filesystem::path& path) {
-	if (path == "clang++" || path == "g++") {
+	if (path.filename() == "clang++" || path.filename() == "g++") {
 		return std::unique_ptr<GnuCompatibleCompiler> {
 			new GnuCompatibleCompiler {path}};
 	} else {
@@ -189,11 +197,9 @@ std::unique_ptr<freight::Compiler> freight::Compiler::get() {
 bool freight::Compiler::compile(const CompilerOpts& opts,
 	const std::filesystem::path& out_file,
 	const std::filesystem::path& in_file) {
-	using namespace std::filesystem;
-
 	// add options/arguments
-	auto args = build_options(opts);
-	args.append_range(build_out_file_option(out_file));
+	auto args = generate_options(opts);
+	args.append_range(generate_out_file_option(out_file));
 	args.push_back(in_file);
 
 	// invoke compiler

@@ -15,9 +15,10 @@
 #include <system_error>
 #include <unordered_set>
 #include <vector>
-
-// Docopt
-#include <docopt/docopt.h>
+#include <memory>
+#include <ranges>
+#include <system_error>
+#include <utility>
 
 // Toml++
 #include <toml++/toml.hpp>
