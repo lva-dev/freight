@@ -43,3 +43,5 @@ freight build
 ```
 freight run
 ```
+## Notes
+`freight new` is the only command implemented at the moment. `init`, `build`, and `run` should be completed within a few weeks (from Dec. 15, 2025, when this was written).
