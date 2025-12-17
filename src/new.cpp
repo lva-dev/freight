@@ -83,21 +83,8 @@ namespace freight {
 		create_manifest_file(opts);
 		create_source_files(opts);
 	}
-
-	void new_(const NewOptions& opts) {
-		using namespace std::filesystem;
-
-		if (!create_directories(opts.path)) {
-			fail("failed to create project `{}` at `{}`",
-				absolute(opts.name).string(),
-				opts.path.string())
-				.exit();
-		}
-
-		init(opts);
-	}
-
-	void init(const NewOptions& opts) {
+    
+	void init_impl(const NewOptions& opts) {
 		static const std::string DEFAULT_PROJECT_VERSION = "0.1.0";
 		static const std::string DEFAULT_CXX_STANDARD = "20";
 
@@ -110,4 +97,30 @@ namespace freight {
 
 		make(makeopts);
 	}
+    
+	void new_(const NewOptions& opts) {
+		using namespace std::filesystem;
+
+		if (!create_directories(opts.path)) {
+			fail("failed to create project `{}` at `{}`",
+				absolute(opts.name).string(),
+				opts.path.string())
+				.exit();
+		}
+
+		init_impl(opts);
+	}
+
+    void init(const InitOptions& opts) {
+        using namespace std::filesystem;
+
+        NewOptions new_opts {
+            current_path(),    
+            std::move(opts.name),
+            std::move(opts.standard),
+            std::move(opts.version),
+        };
+
+        init_impl(new_opts);
+    }
 } // namespace freight

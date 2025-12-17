@@ -21,5 +21,11 @@ namespace freight {
 
 	void new_(const NewOptions& opts);
 
-	void init(const NewOptions& opts);
+    struct InitOptions {
+		std::string name;
+		std::optional<std::string> standard = {};
+		std::optional<std::string> version = {};
+	};
+
+	void init(const InitOptions& opts);
 } // namespace freight

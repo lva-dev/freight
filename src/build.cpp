@@ -52,7 +52,7 @@ static std::string parse_name(const toml::node_view<toml::node>& project_table,
 	return name;
 }
 
-static bool validate_standard(std::string_view str) {
+static bool is_standard_valid(std::string_view str) {
 	static const std::unordered_set<std::string_view> STANDARDS = {
 		"03", "11", "14", "17", "20", "23"};
 	return STANDARDS.contains(str);
@@ -74,7 +74,7 @@ static std::string parse_standard(
 	}
 
 	auto std = standard_node.ref<std::string>();
-	if (!validate_standard(std)) {
+	if (!is_standard_valid(std)) {
 		fail_parsing_manifest(manifest_path)
 			.cause("failed to parse the `standard` key")
 			.cause(std::format("reccommended standard values are `17`, "
@@ -125,7 +125,7 @@ static Manifest parse_manifest(const std::filesystem::path& path) {
 	return manifest;
 }
 
-static Manifest load(const std::filesystem::path& dir) {
+static Manifest load_manifest(const std::filesystem::path& dir) {
 	using namespace std::filesystem;
 
 	auto manifest_path = absolute(dir / MANIFEST_FILENAME);
@@ -145,10 +145,33 @@ static Manifest load(const std::filesystem::path& dir) {
 	return parse_manifest(manifest_path);
 }
 
-void build(const BuildOptions& opts) {
+
+std::vector<std::filesystem::path> compile_source_files(const CompilerOpts& opts,
+	Compiler& compiler,
+	const std::filesystem::path& src_dir,
+	const std::filesystem::path& out_dir) {
 	using namespace std::filesystem;
 
-	Manifest manifest = load(opts.path);
+	// compile source files
+	std::vector<path> obj_files;
+	bool all_successful = true;
+	auto src_it = recursive_directory_iterator {src_dir};
+	for (auto src_file : src_it) {
+		auto obj_file = out_dir / relative(src_file.path() / ".o");
+		obj_files.push_back(obj_file);
+		bool success = compiler.compile(opts, obj_file, src_file);
+		all_successful = all_successful && success;
+	}
+
+	if (!all_successful) {
+		fail("failed to build files").exit();
+	}
+
+	return obj_files;
+}
+
+void build_all(const BuildOptions& opts, const Manifest& manifest) {
+	using namespace std::filesystem;
 
 	auto compiler = freight::Compiler::get();
 	if (!compiler) {
@@ -160,24 +183,21 @@ void build(const BuildOptions& opts) {
 	path target_dir = opts.path / "target";
 	path int_dir = target_dir / "build";
 	path src_dir = opts.path / "src";
-
+    
 	CompilerOpts compiler_opts {.std = manifest.standard};
-
-	// compile source files
-	std::vector<path> obj_files;
-	bool all_successful = true;
-	auto src_it = recursive_directory_iterator {src_dir};
-	for (auto src_file : src_it) {
-		auto obj_file = int_dir / relative(src_file.path() / ".o");
-		obj_files.push_back(obj_file);
-		bool success = compiler->compile(compiler_opts, obj_file, src_file);
-		all_successful = all_successful && success;
+    
+	auto obj_files = compile_source_files(compiler_opts, *compiler, src_dir, int_dir);
+    path exe_path = target_dir / manifest.name;
+    
+	bool linked = compiler->link(compiler_opts, exe_path, obj_files);
+    if (!linked) {
+		fail("failed to build files")
+			.cause("linker error")
+			.exit();
 	}
+}
 
-	if (!all_successful) {
-		fail("failed to build files").exit();
-	}
-
-	// link files
-	compiler->link(compiler_opts, target_dir / manifest.name, obj_files);
+void build(const BuildOptions& opts) {
+	Manifest manifest = load_manifest(opts.path);
+	build_all(opts, manifest);
 }

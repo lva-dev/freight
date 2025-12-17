@@ -5,8 +5,8 @@
 #include <memory>
 #include <ranges>
 #include <system_error>
-#include <utility>
 
+namespace fs = std::filesystem;
 //////////////////////////////////////////////////
 /// freight::Process
 //////////////////////////////////////////////////
@@ -28,7 +28,7 @@ static std::vector<char *> to_args_for_exec(
 	return c_args;
 }
 
-freight::Process freight::Process::start(const std::filesystem::path& name,
+freight::Process freight::Process::start(const fs::path& name,
 	std::vector<std::string>& args) {
 	pid_t pid = fork();
 
@@ -110,7 +110,7 @@ std::vector<std::string> freight::GnuCompatibleCompiler::generate_options(
 
 std::vector<std::string>
 freight::GnuCompatibleCompiler::generate_out_file_option(
-	const std::filesystem::path& out_file_path) {
+	const fs::path& out_file_path) {
 	std::vector<std::string> options;
 	options.push_back("-o");
 	options.push_back(out_file_path.string());
@@ -124,19 +124,19 @@ freight::GnuCompatibleCompiler::generate_out_file_option(
  * @param file the file to search for
  * @return the full path of the file, or an empty path
  */
-static std::filesystem::path search_path_variable(std::filesystem::path file) {
+static fs::path search_path_variable(fs::path file) {
 	auto PATH = std::getenv("PATH");
 	if (PATH == nullptr) {
 		return {};
 	}
 
-	std::filesystem::path dir;
+	fs::path dir;
 	for (char *ch = PATH; *ch != '\0'; ch++) {
 		if (*ch != ':') {
 			dir += *ch;
 		} else if (!dir.empty()) {
 			auto potential_file = dir / file;
-			if (std::filesystem::exists(potential_file)) {
+			if (fs::exists(potential_file)) {
 				return potential_file;
 			}
 
@@ -166,7 +166,7 @@ std::unique_ptr<freight::GnuCompiler> freight::GnuCompiler::find() {
 }
 
 std::unique_ptr<freight::Compiler> freight::Compiler::from_path(
-	const std::filesystem::path& path) {
+	const fs::path& path) {
 	if (path.filename() == "clang++" || path.filename() == "g++") {
 		return std::unique_ptr<GnuCompatibleCompiler> {
 			new GnuCompatibleCompiler {path}};
@@ -195,8 +195,8 @@ std::unique_ptr<freight::Compiler> freight::Compiler::get() {
 }
 
 bool freight::Compiler::compile(const CompilerOpts& opts,
-	const std::filesystem::path& out_file,
-	const std::filesystem::path& in_file) {
+	const fs::path& out_file,
+	const fs::path& in_file) {
 	// add options/arguments
 	auto args = generate_options(opts);
 	args.append_range(generate_out_file_option(out_file));

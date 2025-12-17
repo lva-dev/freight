@@ -12,12 +12,12 @@ add_executable(${TARGET}
     src/build.cpp
     src/compiler.cpp
 )
-    
+
 target_precompile_headers(${TARGET} PRIVATE
     src/pch.h
 )
 
-if (CMAKE_BUILD_TYPE IN_LIST "Debug;RelWithDebInfo")
+if(CMAKE_BUILD_TYPE IN_LIST "Debug;RelWithDebInfo")
     target_compile_options(${TARGET} PRIVATE
         -g
     )
