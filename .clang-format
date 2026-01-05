@@ -59,7 +59,7 @@ UseTab: Always
 
 # Namespaces
 AllowShortNamespacesOnASingleLine: true
-NamespaceIndentation: All
+NamespaceIndentation: Inner
 ShortNamespaceLines: 1
 WrapNamespaceBodyWithEmptyLines: Never
 FixNamespaceComments: true
@@ -68,7 +68,7 @@ FixNamespaceComments: true
 AllowAllArgumentsOnNextLine: true
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowShortEnumsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: All
+AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: Never
 
 # Braces
@@ -133,23 +133,11 @@ IncludeCategories:
     CaseSensitive:  true
     Priority:       -1
     SortPriority:   -1
-  - Regex:          '<(errhandlingapi.h)|(libloaderapi.h)|(windows.h)>'
+  - Regex:          '^<'
     CaseSensitive:  false
     Priority:       1
     SortPriority:   1
-  - Regex:          '^<SDL3(_image)?/'
+  - Regex:          ".*"
     CaseSensitive:  false
     Priority:       2
     SortPriority:   2
-  - Regex:          '^<nameof/'
-    CaseSensitive:  false
-    Priority:       3
-    SortPriority:   3
-  - Regex:          '^<'
-    CaseSensitive:  false
-    Priority:       4
-    SortPriority:   4
-  - Regex:          ".*"
-    CaseSensitive:  false
-    Priority:       5
-    SortPriority:   5

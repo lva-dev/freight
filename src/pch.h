@@ -1,5 +1,12 @@
 #pragma once
 
+// Boost
+#include <boost/algorithm/string/split.hpp>
+// CLI11
+#include <CLI11.hpp>
+// Toml++
+#include <toml++/toml.hpp>
+
 // Standard Library
 #include <cctype>
 #include <cstdlib>
@@ -14,14 +21,8 @@
 #include <string_view>
 #include <system_error>
 #include <unordered_set>
-#include <vector>
-#include <memory>
-#include <ranges>
-#include <system_error>
 #include <utility>
-
-// Toml++
-#include <toml++/toml.hpp>
+#include <vector>
 
 // POSIX
 #define _POSIX_C_SOURCE 200809L

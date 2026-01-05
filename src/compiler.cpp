@@ -2,38 +2,42 @@
 
 #include "compiler.h"
 
+#include <filesystem>
 #include <memory>
 #include <ranges>
 #include <system_error>
 
-namespace fs = std::filesystem;
+namespace freight {
 //////////////////////////////////////////////////
-/// freight::Process
+/// Process
 //////////////////////////////////////////////////
 
-freight::Process::~Process() {
-	if (_pid != NO_PID) {
+Process::~Process() {
+	if (pid_ != NO_PID) {
 		std::terminate();
 	}
 }
 
+static char *string_pointer(const std::string& str) {
+	return const_cast<char *>(str.data());
+}
+
 static std::vector<char *> to_args_for_exec(
-	const std::vector<std::string>& args) {
+	const std::span<std::string>& args) {
+
 	using namespace std::ranges;
-	using namespace std::ranges::views;
-	auto filtered = transform(args,
-		[](const std::string& str) { return const_cast<char *>(str.data()); });
-	std::vector<char *> c_args {filtered.begin(), filtered.end()};
+	auto c_args =
+		to<std::vector<char *>>(views::transform(args, string_pointer));
 	c_args.push_back(nullptr);
 	return c_args;
 }
 
-freight::Process freight::Process::start(const fs::path& name,
-	std::vector<std::string>& args) {
+Process Process::start(const std::filesystem::path& name,
+	std::span<std::string> args) {
 	pid_t pid = fork();
 
 	if (pid == -1) {
-		throw std::system_error(errno, std::generic_category());
+		throw std::system_error(errno, std::system_category());
 	}
 
 	if (pid == 0) {
@@ -49,38 +53,38 @@ freight::Process freight::Process::start(const fs::path& name,
 		}
 
 		// exec should never return on success, so it has failed here
-		throw std::system_error(errno, std::generic_category());
+		throw std::system_error(errno, std::system_category());
 	}
 
 	return Process {pid};
 }
+int Process::wait_for() {
 
-int freight::Process::wait_for() {
 	int proc_status;
-	int wait_result = waitpid(_pid, &proc_status, 0);
-	if (wait_result != _pid) {
+	int wait_result = waitpid(pid_, &proc_status, 0);
+	if (wait_result != pid_) {
 		// failed to execute child
 		throw std::system_error(errno, std::generic_category());
-		return false;
 	}
 
+	pid_ = NO_PID;
 	int exitcode = WEXITSTATUS(proc_status);
 	return exitcode;
 }
 
 //////////////////////////////////////////////////
-/// freight::Compiler
-/// freight::GnuCompatibleCompiler
-/// freight::ClangCompiler
-/// freight::GnuCompiler
+/// Compiler
+/// GnuCompatibleCompiler
+/// ClangCompiler
+/// GnuCompiler
 //////////////////////////////////////////////////
 
-std::vector<std::string> freight::GnuCompatibleCompiler::generate_options(
+std::vector<std::string> GnuCompatibleCompiler::flags(
 	const CompilerOpts& opts) {
 	std::vector<std::string> options;
 
 	// Standard
-	options.push_back(std::format("-std={}", opts.std));
+	options.push_back(std::format("-std=c++{}", opts.std));
 
 	// Warnings
 	if (opts.wall) {
@@ -108,13 +112,19 @@ std::vector<std::string> freight::GnuCompatibleCompiler::generate_options(
 	return options;
 }
 
-std::vector<std::string>
-freight::GnuCompatibleCompiler::generate_out_file_option(
-	const fs::path& out_file_path) {
+std::vector<std::string> GnuCompatibleCompiler::out_file_flag(
+	const std::filesystem::path& out_file_path) {
 	std::vector<std::string> options;
 	options.push_back("-o");
 	options.push_back(out_file_path.string());
 	return options;
+}
+
+static std::vector<std::string> split_by(char delimeter, std::string_view str) {
+	using namespace boost::algorithm;
+	std::vector<std::string> items;
+	split(items, str, [delimeter](char ch) { return ch == delimeter; });
+	return items;
 }
 
 /**
@@ -124,30 +134,31 @@ freight::GnuCompatibleCompiler::generate_out_file_option(
  * @param file the file to search for
  * @return the full path of the file, or an empty path
  */
-static fs::path search_path_variable(fs::path file) {
+static std::filesystem::path search_path_variable(
+	const std::filesystem::path& file) {
 	auto PATH = std::getenv("PATH");
 	if (PATH == nullptr) {
 		return {};
 	}
 
-	fs::path dir;
-	for (char *ch = PATH; *ch != '\0'; ch++) {
-		if (*ch != ':') {
-			dir += *ch;
-		} else if (!dir.empty()) {
-			auto potential_file = dir / file;
-			if (fs::exists(potential_file)) {
-				return potential_file;
-			}
+	using namespace std::filesystem;
 
-			dir.clear();
+	auto directories = split_by(':', PATH);
+	for (auto& dir : directories) {
+		if (dir.empty()) {
+			continue;
+		}
+
+		auto found = dir / file;
+		if (exists(found)) {
+			return found;
 		}
 	}
 
 	return {};
 }
 
-std::unique_ptr<freight::ClangCompiler> freight::ClangCompiler::find() {
+std::unique_ptr<ClangCompiler> ClangCompiler::find() {
 	auto path = search_path_variable("clang++");
 	if (path.empty()) {
 		return {};
@@ -156,7 +167,7 @@ std::unique_ptr<freight::ClangCompiler> freight::ClangCompiler::find() {
 	}
 }
 
-std::unique_ptr<freight::GnuCompiler> freight::GnuCompiler::find() {
+std::unique_ptr<GnuCompiler> GnuCompiler::find() {
 	auto path = search_path_variable("g++");
 	if (path.empty()) {
 		return {};
@@ -165,8 +176,8 @@ std::unique_ptr<freight::GnuCompiler> freight::GnuCompiler::find() {
 	}
 }
 
-std::unique_ptr<freight::Compiler> freight::Compiler::from_path(
-	const fs::path& path) {
+std::unique_ptr<Compiler> Compiler::from_path(
+	const std::filesystem::path& path) {
 	if (path.filename() == "clang++" || path.filename() == "g++") {
 		return std::unique_ptr<GnuCompatibleCompiler> {
 			new GnuCompatibleCompiler {path}};
@@ -175,7 +186,7 @@ std::unique_ptr<freight::Compiler> freight::Compiler::from_path(
 	}
 }
 
-std::unique_ptr<freight::Compiler> freight::Compiler::get() {
+std::unique_ptr<Compiler> Compiler::get() {
 	auto CXX = getenv("CXX");
 
 	if (CXX != nullptr) {
@@ -194,15 +205,16 @@ std::unique_ptr<freight::Compiler> freight::Compiler::get() {
 	}
 }
 
-bool freight::Compiler::compile(const CompilerOpts& opts,
-	const fs::path& out_file,
-	const fs::path& in_file) {
-	// add options/arguments
-	auto args = generate_options(opts);
-	args.append_range(generate_out_file_option(out_file));
+bool Compiler::compile(const CompilerOpts& opts,
+	const std::filesystem::path& out_file,
+	const std::filesystem::path& in_file) {
+
+	auto args = flags(opts);
+	args.push_back("-c");
+	args.append_range(out_file_flag(out_file));
 	args.push_back(in_file);
 
-	// invoke compiler
-	auto process = Process::start(_path, args);
-	return process.wait_for() != 0;
+	auto process = Process::start(path_, args);
+	return process.wait_for() == 0;
 }
+} // namespace freight

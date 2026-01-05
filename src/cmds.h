@@ -5,27 +5,43 @@
 #include <string>
 
 namespace freight {
-	struct BuildOptions {
-		std::filesystem::path path;
-		bool release;
+class GlobalContext {
+private:
+	GlobalContext() = default;
+public:
+	GlobalContext(const GlobalContext&) = delete;
+	GlobalContext& operator=(const GlobalContext&) = delete;
+	GlobalContext(GlobalContext&) = default;
+	GlobalContext& operator=(GlobalContext&&) = default;
+
+	static GlobalContext get() {
+		return GlobalContext();
 	};
 
-	void build(const BuildOptions& opts);
+	std::filesystem::path cwd() {
+		return std::filesystem::current_path();
+	}
+};
 
-	struct NewOptions {
-		std::filesystem::path path;
-		std::string name;
-		std::optional<std::string> standard = {};
-		std::optional<std::string> version = {};
-	};
+struct BuildOptions {
+	bool release;
+};
 
-	void new_(const NewOptions& opts);
+void build(GlobalContext& gctx, const BuildOptions& opts);
 
-    struct InitOptions {
-		std::string name;
-		std::optional<std::string> standard = {};
-		std::optional<std::string> version = {};
-	};
+struct NewOptions {
+	std::filesystem::path path;
+	std::optional<std::string> name = {};
+	std::optional<std::string> standard = {};
+};
 
-	void init(const InitOptions& opts);
+void new_(GlobalContext& gctx, const NewOptions& opts);
+
+struct InitOptions {
+	std::optional<std::filesystem::path> path = {};
+	std::optional<std::string> name = {};
+	std::optional<std::string> standard = {};
+};
+
+void init(GlobalContext& gctx, const InitOptions& opts);
 } // namespace freight

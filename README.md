@@ -1,5 +1,6 @@
 # Freight
 A cargo-like build system, but for C++.
+
 ## Build
 Freight is built using CMake, so you can build it like any other CMake project:
 ```
@@ -10,6 +11,7 @@ or, you can run the [build script](scripts/build.sh) in the `scripts` directory 
 chmod +x scripts/build.sh
 scripts/build.sh
 ```
+
 ## Usage
 ### Overview
 ```
@@ -35,13 +37,17 @@ In the current directory:
 ```
 freight init
 ```
+
 ### Building a project
 ```
+
 freight build
 ```
+
 ### Running a project
 ```
 freight run
 ```
+
 ## Notes
-`freight new` is the only command implemented at the moment. `init`, `build`, and `run` should be completed within a few weeks (from Dec. 15, 2025, when this was written).
+`freight new` is the only command implemented at the moment. `init`, `build`, and `run` will be implemented some time in the future (As of Jan. 5, 2026).
