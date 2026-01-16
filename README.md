@@ -50,4 +50,6 @@ freight run
 ```
 
 ## Notes
-`freight new` is the only command implemented at the moment. `init`, `build`, and `run` will be implemented some time in the future (As of Jan. 5, 2026).
+`freight new`, `freight init`, and `freight build` are the only currently implemented commands. `build`, and `run` will be fully implemented some time in the future (As of Jan. 16, 2026).
+
+(maybe until summer because comp arch has me addicted rn)
