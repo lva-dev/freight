@@ -1,0 +1,7 @@
+[submodule "vendor/cwalk"]
+	path = vendor/cwalk
+	url = https://github.com/likle/cwalk.git
+	branch = stable
+[submodule "vendor/Unity/Unity"]
+	path = vendor/Unity/Unity
+	url = https://github.com/ThrowTheSwitch/Unity
