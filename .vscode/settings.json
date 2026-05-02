@@ -1,9 +1,0 @@
-{
-    "files.exclude": {
-        "**/.cache": true,
-    },
-    "search.exclude": {
-        "build/**": true,
-        "vendor/**": true,
-    }
-}

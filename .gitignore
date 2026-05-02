@@ -1,5 +1,6 @@
-.cache/
 build/
+.cache/
+.local/
 
 # Prerequisites
 *.d
@@ -70,6 +71,7 @@ CTestTestfile.cmake
 _deps
 CMakeUserPresets.json
 
+.vscode/
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json

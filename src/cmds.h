@@ -1,4 +1,6 @@
 #pragma once
 
-void exec_new(char **args);
-void exec_run(char **args);
+#include "util.h"
+
+void exec_new(Strs *args);
+void exec_run(Strs *args);

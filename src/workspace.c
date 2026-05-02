@@ -1,5 +1,6 @@
 #include "workspace.h"
 #include "util.h"
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -16,15 +17,33 @@ bool workspace_exists(const char *cwd) {
     return false;
 }
 
-bool create_main_c_file(const char *source_dir) {
-    char *path = path_join(source_dir, "main.c");
+bool create_manifest_file(WorkspaceContext* ctx) {
+    char *path = path_join(ws_cwd(ctx), "Stim.toml");
     FILE* file = fopen(path, "w");
+    free(path);
+    
     if (!file) {
-        free(path);
         return false; 
     }
     
+    static const char *fmt = "[package]\n"
+        "name = \"%s\"\n"
+        "version = \"0.1.0\""
+        "standard = \"c23\"";
+
+    fprintf(file, fmt, ws_name(ctx));
+    fclose(file);
+    return true;
+}
+
+bool create_main_c_file(const char *source_dir) {
+    char *path = path_join(source_dir, "main.c");
+    FILE* file = fopen(path, "w");
     free(path);
+
+    if (!file) {
+        return false; 
+    }
     
     static const char *SOURCE =
         "#include <stdio.h>\n"
@@ -55,13 +74,12 @@ WorkspaceContext workspace_create(const char* path) {
         ._object_dir = NULL,
         ._source_dir = NULL,
     };
-    
-    
-    int makedir_result = fs_create_directory_recursive(ws_source_dir(&ws));    
-    if (makedir_result == -1) {
+       
+    if (!fs_create_directory_recursive(ws_source_dir(&ws))) {
         bail("failed to create project\n\n%s", cause(strerror(errno)));
     }
     
+    create_manifest_file(&ws);
     create_main_c_file(ws_source_dir(&ws));
     return ws;
 }
@@ -81,51 +99,61 @@ WorkspaceContext workspace_open(const char* cwd) {
     return ws;
 }
 
+const char* ws_cwd(const WorkspaceContext* ws) {
+    assert(ws->_name != NULL);
+    return ws->_cwd;
+}
+
+const char* ws_name(const WorkspaceContext* ws) {
+    assert(ws->_name != NULL);
+    return ws->_name;
+}
+
 const char* ws_target_dir(const WorkspaceContext* ws) {
     if (ws->_target_dir != NULL) {
         return ws->_target_dir;
-    } else {
-        static const char *target_dir = NULL;
-        if (!target_dir) {
-            target_dir = path_join(ws->_cwd, "target");
-        }
-        
-        return target_dir;
     }
+
+    static const char *target_dir = NULL;
+    if (!target_dir) {
+        target_dir = path_join(ws_cwd(ws), "target");
+    }
+    
+    return target_dir;
 }
 
 const char* ws_object_dir(const WorkspaceContext* ws) {
-    if (ws->_source_dir != NULL) {
-        return ws->_source_dir;
-    } else {
-        return ws_target_dir(ws);
+    if (ws->_object_dir != NULL) {
+        return ws->_object_dir;
     }
+
+    return ws_target_dir(ws);
 }
 
 const char* ws_source_dir(const WorkspaceContext* ws) {
     if (ws->_source_dir != NULL) {
         return ws->_source_dir;
-    } else {
-        static const char *source_dir = NULL;
-        if (!source_dir) {
-            source_dir = path_join(ws->_cwd, "src");
-        }
-        
-        return source_dir;
     }
+
+    static const char *source_dir = NULL;
+    if (!source_dir) {
+        source_dir = path_join(ws_cwd(ws), "src");
+    }
+    
+    return source_dir;
 }
 
 const char* ws_compiler_path(const WorkspaceContext* ws) {
     if (ws->_compiler_path != NULL) {
         return ws->_compiler_path;
-    } else {
-        static const char *compiler_path = NULL;
-        if (!compiler_path) {
-            compiler_path = fs_search_path("clang");
-        }
-        
-        return compiler_path;
     }
+
+    static const char *compiler_path = NULL;
+    if (!compiler_path) {
+        compiler_path = fs_search_path("clang");
+    }
+    
+    return compiler_path;
 }
 
 void workspace_free(const WorkspaceContext* ws) {

@@ -37,16 +37,19 @@ void status(const char *status, const char *fmt, ...);
 /**
  * Null-terminated dynamic array of null-terminated strings.
  */
-typedef char** Strs;
+typedef struct {
+    char **data;
+} Strs;
 
 Strs strs_new();
-Strs strs_from_array(char **array, int length);
-Strs strs_clone(Strs array);
-Strs strs_subrange(Strs array, int start, int end);
-void strs_free(Strs array);
-int strs_len(Strs array);
-char* strs_push(Strs array, const char *str);
-bool strs_contains(Strs array, const char *str);
+Strs strs_from_array(char **arr, int length);
+Strs strs_clone(Strs *arr);
+Strs strs_from_range(Strs *arr, int start, int end);
+void strs_free(Strs *arr);
+int strs_len(const Strs *arr);
+char* strs_push(Strs *arr, const char *str);
+char* strs_set(Strs *arr, size_t i, const char *str);
+bool strs_contains(const Strs *arr, const char *str);
 
 /**
  * Path manipulation and filesystem functions.
@@ -67,12 +70,15 @@ char *path_change_extension(const char *path, const char *extension);
  * arguments to pass to it.
  */
 typedef struct ProcessBuilder {
-    const char* path;
+    const char* _path;
+    const char* _name;
     Strs args;
 } ProcessBuilder;
 
 ProcessBuilder process_new(const char *path);
 void process_free(ProcessBuilder* pb);
 void process_set_path(ProcessBuilder* pb, const char* path);
+void process_set_name(ProcessBuilder* pb, const char* name);
 void process_add_arg(ProcessBuilder* pb, const char* arg);
+
 int process_start(const ProcessBuilder* pb);
