@@ -1,19 +1,29 @@
 #pragma once
 
-#define _GNU_SOURCE
+#ifndef _GNU_SOURCE
+    #define _GNU_SOURCE
+#endif
 
-#include <cwalk.h>
-#include <stb/stb_ds.h>
+#include <filesystem>
+#include <format>
+#include <fstream>
+#include <iostream>
+#include <print>
+#include <string>
+#include <system_error>
+#include <utility>
+#include <vector>
 
-#include <assert.h>
-#include <errno.h>
-#include <limits.h>
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+#include <cassert>
+#include <cerrno>
+#include <climits>
+#include <cstdarg>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
 
 #include <dirent.h>
 #include <libgen.h>

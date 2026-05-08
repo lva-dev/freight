@@ -3,22 +3,24 @@ project(
     stim
     VERSION 0.0.0
     DESCRIPTION "Cargo-like build system for C"
-    LANGUAGES C
+    LANGUAGES CXX
 )
 
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(TARGET stim)
 set(SOURCE_DIRECTORY "${CMAKE_SOURCE_DIR}/src")
 set(VENDOR_DIRECTORY "${CMAKE_SOURCE_DIR}/vendor")
 
 add_executable("${TARGET}"
-    "${SOURCE_DIRECTORY}/init.c"
-    "${SOURCE_DIRECTORY}/run.c"
-    "${SOURCE_DIRECTORY}/stim.c"
-    "${SOURCE_DIRECTORY}/util.c"
-    "${SOURCE_DIRECTORY}/workspace.c"
+    "${SOURCE_DIRECTORY}/init.cpp"
+    "${SOURCE_DIRECTORY}/run.cpp"
+    "${SOURCE_DIRECTORY}/stim.cpp"
+    "${SOURCE_DIRECTORY}/util.cpp"
+    "${SOURCE_DIRECTORY}/workspace.cpp"
 )
 
 if (CMAKE_BUILD_TYPE EQUAL "Debug")
@@ -30,12 +32,6 @@ elseif (CMAKE_BUILD_TYPE EQUAL "RelWithDebInfo")
 elseif (CMAKE_BUILD_TYPE EQUAL "MinSizeRel")
     target_compile_options("${TARGET}" -Oz)
 endif()
-
-add_subdirectory("${VENDOR_DIRECTORY}/cwalk")
-target_link_libraries("${TARGET}" PRIVATE cwalk)
-
-add_subdirectory("${VENDOR_DIRECTORY}/stb_ds")
-target_link_libraries("${TARGET}" PRIVATE stb_ds)
 
 # set(TESTS_DIRECTORY "${CMAKE_SOURCE_DIR}/tests")
 # include(CTest)

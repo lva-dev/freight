@@ -1,84 +1,208 @@
 #pragma once
-#include <stdarg.h>
+
+#include <cstdlib>
+#include <filesystem>
+#include <format>
+#include <fstream>
+#include <iostream>
+#include <iterator>
 #include <stb/stb_ds.h>
+#include <cstddef>
+#include <string>
+#include <string_view>
+#include <sys/mman.h>
+#include <system_error>
+#include <utility>
+#include <variant>
+#include <vector>
 
-#define streq(a, b) (strcmp(a, b) == 0)
+template<class... Args>
+void emit_error(std::format_string<Args...> fmt, Args... args) {
+    std::println(std::cerr, "\033[31merror:\033[39m {}", std::format(fmt, std::forward<Args>(args)...));
+}
 
-#define invoke_with_varargs(return_location, function_ptr, ...) do {\
-    va_list VA_LIST;\
-    va_start(VA_LIST);\
-    *return_location = function_ptr(__VA_ARGS__);\
-    va_end(VA_LIST);\
-} while(0)
+template<class... Args>
+[[noreturn]] void bail(std::format_string<Args...> fmt, Args... args) {
+    emit_error(fmt, std::forward<Args>(args)...);
+    exit(1);
+}
 
-#define invoke_with_varargs_void(function_ptr, ...) do {\
-    va_list VA_LIST;\
-    va_start(VA_LIST);\
-    function_ptr(__VA_ARGS__);\
-    va_end(VA_LIST);\
-} while(0)
+template<class... Args>
+std::string cause(std::format_string<Args...> fmt, Args... args) {
+    return std::format("Caused by:\n  {}", std::format(fmt, std::forward<Args>(args)...));
+}
 
-/**
- * Printing functions.
- */
-int println(void);
-int vprintfln(const char *fmt, va_list vlist);
-int printfln(const char *fmt, ...);
-int eprintln(void);
-int veprintf(const char *fmt, va_list vlist);
-int veprintfln(const char *fmt, va_list vlist);
-int eprintf(const char *fmt, ...);
-int eprintfln(const char *fmt, ...);
-    
-[[noreturn]] void bail(const char *fmt, ...);
-char *cause(const char *fmt, ...);
-void status(const char *status, const char *fmt, ...);
+inline  std::string cause(std::string_view str) {
+    return std::format("Caused by:\n  {}", str);
+}
 
-/**
- * Null-terminated dynamic array of null-terminated strings.
- */
-typedef struct {
-    char **data;
-} Strs;
+template<class... Args>
+void status(const std::string_view status, std::format_string<Args...> fmt, Args... args) {
+    std::print("   \033[32m{}\033[m {}\n", status, std::format(fmt, std::forward<Args>(args)...));
+    std::cout.flush();
+}
 
-Strs strs_new();
-Strs strs_from_array(char **arr, int length);
-Strs strs_clone(Strs *arr);
-Strs strs_from_range(Strs *arr, int start, int end);
-void strs_free(Strs *arr);
-int strs_len(const Strs *arr);
-char* strs_push(Strs *arr, const char *str);
-char* strs_set(Strs *arr, size_t i, const char *str);
-bool strs_contains(const Strs *arr, const char *str);
+namespace io {
+    bool write_file(const std::filesystem::path file, std::string_view content);
 
-/**
- * Path manipulation and filesystem functions.
- */
-const char *fs_cwd(void);
-const char* fs_search_path(const char* name);
-bool fs_exists(const char* path);
-bool fs_is_regular(const char *path);
-bool fs_create_directory_recursive(const char *path);
-bool path_is_absolute(const char *path);
-char *path_join(const char* a, const char* b);
-char *path_get_basename(const char *path);
-char *path_get_relative(const char *base, const char *path);
-char *path_change_extension(const char *path, const char *extension);
+    /**
+    * A handle to an anonymous file, that is, a memory-mapped file without a name in the
+    * filesystem, making it accessible only through its file descriptor (which is owned
+    * by the returned FdStream).
+    */
+    struct AnonymousFile {
+    private:
+        inline static constexpr int NO_FD = -1;
+        int _fd = NO_FD;
+        AnonymousFile(int fd) : _fd{fd} {}
+    public:
+        AnonymousFile() = default;
+        static AnonymousFile create() {
+            std::error_code errc;
+            auto file = create(errc);
+            if (errc) {
+                throw std::system_error{errc};
+            }
+
+            return file;
+        }
+        static AnonymousFile create(std::error_code& errc);
+        ~AnonymousFile();
+        AnonymousFile(const AnonymousFile&) = delete;
+        AnonymousFile& operator=(const AnonymousFile&) = delete;
+        AnonymousFile(AnonymousFile&&);
+        AnonymousFile& operator=(AnonymousFile&&);
+        
+        bool is_open() const { return _fd != NO_FD; }
+
+        std::filesystem::path path() const;
+    };
+ 
+    /**
+     * A handle to an unnamed or named pipe.
+     */
+    class Pipe {
+    private:
+        using Handle = std::variant<std::array<int, 2>, int>; 
+        std::optional<Handle> _id;
+        bool _named;
+    public:
+        Pipe() = default;
+        static Pipe create();
+        static Pipe create_named(const std::filesystem::path& path);
+        ~Pipe();
+        
+        Pipe& operator=(const Pipe&) = delete;
+        Pipe(const Pipe&) = delete;
+        Pipe& operator=(Pipe&&) = default;
+        Pipe(Pipe&& other) = default;
+        
+        bool is_open() const { return _id.has_value(); }
+        bool is_unnamed() const { return is_open() && !_named; }
+        bool is_named() const { return is_open() && _named; }
+        
+        std::ifstream read_end() const;
+        std::ofstream write_end() const;
+    };
+}
+
+namespace ds {
+    /**
+    * A null terminated dynamic array of of C strings.
+    */
+    class Strings {
+        std::vector<char*> _data;
+        public:
+        using value_type = char*;
+        using allocator_type = decltype(_data)::allocator_type;
+        using pointer = char**;
+        using const_pointer = const char*;
+        using iterator = decltype(_data)::iterator;
+        using const_iterator = decltype(_data)::const_iterator;
+        
+        Strings() {
+            _data.push_back(nullptr);
+        }
+        
+        Strings(const Strings& other) : Strings{} {
+            for (char* str : other) {
+                push_back(str);
+            }
+        }
+        
+        Strings(Strings&& other) {
+            for (char* str : *this) {
+                delete[] str;
+            }
+            
+            _data = std::move(other._data);
+            other._data.clear();
+        }
+        
+        ~Strings() {
+            for (char* str : *this) {
+                delete[] str;
+            }
+        }
+        
+        std::size_t size() const { return _data.size() - 1; }
+        
+        pointer data() { return _data.data(); }
+        const value_type *data() const { return _data.data(); }
+        
+        const_pointer operator [](std::size_t i) const { return _data[i]; }
+        
+        void set(std::size_t i, std::string_view str);
+        
+        void reserve(std::size_t count) { _data.reserve(count + 1); }
+        
+        void push_back(std::string_view str) { insert(size(), str); }
+        void push_front(std::string_view str) { insert(0, str); }
+        void insert(std::size_t i, std::string_view str);
+        void erase(std::size_t i);
+
+        iterator begin() { return _data.begin(); }
+        const_iterator begin() const { return _data.begin(); }
+        const_iterator cbegin() const noexcept { return _data.cbegin(); }
+        iterator end() { return _data.end() - 1; }
+        const_iterator end() const { return _data.end() - 1; }
+        const_iterator cend() const noexcept { return _data.cend() - 1; }
+    };
+}
 
 /**
  * Builder for subprocesses. Contains the path to the executable and the
  * arguments to pass to it.
  */
-typedef struct ProcessBuilder {
-    const char* _path;
-    const char* _name;
-    Strs args;
-} ProcessBuilder;
+class ProcessBuilder {
+    std::filesystem::path _path;
+    bool _name_inferred;
+    ds::Strings _args;
+public:
+    ProcessBuilder(const std::filesystem::path& path);
+
+    void set_path(const std::filesystem::path& path);
+    void set_name(const std::string& name);
+    void add_arg(const std::string& arg);
+    void infer_name();
+
+    int start() const;
+};
 
 ProcessBuilder process_new(const char *path);
-void process_free(ProcessBuilder* pb);
-void process_set_path(ProcessBuilder* pb, const char* path);
-void process_set_name(ProcessBuilder* pb, const char* name);
 void process_add_arg(ProcessBuilder* pb, const char* arg);
 
 int process_start(const ProcessBuilder* pb);
+
+namespace filesystem {
+    std::filesystem::path search_path(const char* name);
+}
+
+namespace ranges {
+    template<class R1, class R2>
+    void move_back_range(R1& dest, R2&& src) {
+        dest.insert(dest.end(),
+            std::make_move_iterator(src.begin()),
+            std::make_move_iterator(src.end()));
+    }
+}
