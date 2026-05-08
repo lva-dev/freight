@@ -1,18 +1,8 @@
 #pragma once
 
 #ifndef _GNU_SOURCE
-    #define _GNU_SOURCE
+	#define _GNU_SOURCE
 #endif
-
-#include <filesystem>
-#include <format>
-#include <fstream>
-#include <iostream>
-#include <print>
-#include <string>
-#include <system_error>
-#include <utility>
-#include <vector>
 
 #include <cassert>
 #include <cerrno>
@@ -24,11 +14,19 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-
 #include <dirent.h>
+#include <filesystem>
+#include <format>
+#include <fstream>
+#include <iostream>
 #include <libgen.h>
+#include <print>
+#include <string>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <system_error>
 #include <unistd.h>
+#include <utility>
+#include <vector>

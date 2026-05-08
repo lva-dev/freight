@@ -6,19 +6,18 @@
 #include <vector>
 
 struct TomlPackage {
-    std::optional<std::string> name;
+	std::optional<std::string> name;
+    std::optional<std::string> standard;
 };
 
 struct TomlTarget {
-    std::optional<std::string> name;
-    std::optional<std::vector<std::filesystem::path>> paths;
+	std::optional<std::string> name;
+	std::optional<std::vector<std::filesystem::path>> paths;
 };
 
 struct TomlManifest {
-    std::optional<TomlPackage> package;
-    std::optional<std::vector<TomlTarget>> bin;
+	std::optional<TomlPackage> package;
+	std::optional<std::vector<TomlTarget>> bin;
 };
 
-inline TomlManifest serialize_toml([[maybe_unused]] const std::filesystem::path& manifest_path) {
-    return {};
-}
+TomlManifest serialize_toml(const std::filesystem::path& manifest_path);
