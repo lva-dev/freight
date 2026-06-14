@@ -1,10 +1,6 @@
 Language: Cpp
 Standard: Latest
-<<<<<<< HEAD
 ColumnLimit: 90
-=======
-ColumnLimit: 80
->>>>>>> old/main
 
 # Alignment
 AlignAfterOpenBracket: false

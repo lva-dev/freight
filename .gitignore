@@ -1,6 +1,5 @@
 build/
 .cache/
-<<<<<<< HEAD
 .local/
 
 # Prerequisites
@@ -83,7 +82,3 @@ CMakeUserPresets.json
 
 # Built Visual Studio Code Extensions
 *.vsix
-=======
-.vscode/
-.local/
->>>>>>> old/main
