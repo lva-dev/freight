@@ -1,0 +1,8 @@
+   Building
+    Compiling [] 0/1: abc(bin)
+
+   Building
+    Linking [] 0/1: abc
+
+   Building
+    Finished [debuginfo] target in 999s

@@ -1,6 +1,10 @@
 Language: Cpp
 Standard: Latest
+<<<<<<< HEAD
 ColumnLimit: 90
+=======
+ColumnLimit: 80
+>>>>>>> old/main
 
 # Alignment
 AlignAfterOpenBracket: false
@@ -73,6 +77,7 @@ AllowShortIfStatementsOnASingleLine: Never
 
 # Braces
 InsertBraces: false
+<<<<<<< HEAD
 BreakBeforeBraces: Allman
 
 # BraceWrapping:
@@ -92,11 +97,35 @@ BreakBeforeBraces: Allman
 #   SplitEmptyFunction: false
 #   SplitEmptyRecord: false
   # SplitEmptyNamespace: false
+=======
+
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: false
+  AfterControlStatement: Never
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterStruct: false
+  AfterUnion: false
+  BeforeCatch: false
+  BeforeElse: false
+  BeforeLambdaBody: false
+  BeforeWhile: false
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+>>>>>>> old/main
   
 # Breaks
 AlwaysBreakBeforeMultilineStrings: true
 BreakAdjacentStringLiterals: true
 BreakAfterAttributes: Never
+<<<<<<< HEAD
+=======
+BreakBeforeBraces: Attach
+>>>>>>> old/main
 # BreakBeforeConceptDeclarations: Always
 # BreakBeforeTemplateCloser: false
 # BreakBeforeTernaryOperators: true
@@ -129,7 +158,11 @@ SpacesInContainerLiterals: true
 # Sorting Includes
 IncludeBlocks: Regroup
 IncludeCategories:
+<<<<<<< HEAD
   - Regex:          '(.*/)?Pch.h'
+=======
+  - Regex:          '(.*/)?pch.h'
+>>>>>>> old/main
     CaseSensitive:  true
     Priority:       -1
     SortPriority:   -1

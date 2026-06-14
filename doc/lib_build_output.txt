@@ -1,0 +1,5 @@
+   Building
+    Compiling [] 0/1: def(lib)
+
+   Building
+    Finished [debuginfo] target in 999s
