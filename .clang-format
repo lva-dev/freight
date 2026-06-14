@@ -73,30 +73,30 @@ AllowShortIfStatementsOnASingleLine: Never
 
 # Braces
 InsertBraces: false
+BreakBeforeBraces: Allman
 
-BraceWrapping:
-  AfterCaseLabel: false
-  AfterClass: false
-  AfterControlStatement: Never
-  AfterEnum: false
-  AfterFunction: false
-  AfterNamespace: false
-  AfterStruct: false
-  AfterUnion: false
-  BeforeCatch: false
-  BeforeElse: false
-  BeforeLambdaBody: false
-  BeforeWhile: false
-  IndentBraces: false
-  SplitEmptyFunction: false
-  SplitEmptyRecord: false
-  SplitEmptyNamespace: false
+# BraceWrapping:
+#   AfterCaseLabel: false
+#   AfterClass: false
+#   AfterControlStatement: Never
+#   AfterEnum: false
+#   AfterFunction: false
+#   AfterNamespace: false
+#   AfterStruct: false
+#   AfterUnion: false
+#   BeforeCatch: false
+#   BeforeElse: false
+#   BeforeLambdaBody: false
+#   BeforeWhile: false
+#   IndentBraces: false
+#   SplitEmptyFunction: false
+#   SplitEmptyRecord: false
+  # SplitEmptyNamespace: false
   
 # Breaks
 AlwaysBreakBeforeMultilineStrings: true
 BreakAdjacentStringLiterals: true
 BreakAfterAttributes: Never
-BreakBeforeBraces: Attach
 # BreakBeforeConceptDeclarations: Always
 # BreakBeforeTemplateCloser: false
 # BreakBeforeTernaryOperators: true
@@ -129,7 +129,7 @@ SpacesInContainerLiterals: true
 # Sorting Includes
 IncludeBlocks: Regroup
 IncludeCategories:
-  - Regex:          '(.*/)?pch.h'
+  - Regex:          '(.*/)?Pch.h'
     CaseSensitive:  true
     Priority:       -1
     SortPriority:   -1

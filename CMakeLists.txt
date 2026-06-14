@@ -12,31 +12,32 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(TARGET stim)
-set(SOURCE_DIRECTORY "${CMAKE_SOURCE_DIR}/src")
-set(VENDOR_DIRECTORY "${CMAKE_SOURCE_DIR}/vendor")
+set(SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src")
+set(VENDOR_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/vendor")
 
 add_executable("${TARGET}"
-    "${SOURCE_DIRECTORY}/init.cpp"
-    "${SOURCE_DIRECTORY}/run.cpp"
-    "${SOURCE_DIRECTORY}/stim.cpp"
-    "${SOURCE_DIRECTORY}/util.cpp"
-    "${SOURCE_DIRECTORY}/workspace.cpp"
+    "${SOURCE_DIRECTORY}/Init.cpp"
+    "${SOURCE_DIRECTORY}/Run.cpp"
+    "${SOURCE_DIRECTORY}/Stim.cpp"
+    "${SOURCE_DIRECTORY}/Toml.cpp"
+    "${SOURCE_DIRECTORY}/Util.cpp"
+    "${SOURCE_DIRECTORY}/Workspace.cpp"
 )
 
 if (CMAKE_BUILD_TYPE EQUAL "Debug")
     target_compile_options("${TARGET}" -g)
 elseif (CMAKE_BUILD_TYPE EQUAL "Release")
+    target_compile_definitions("${TARGET}" -NDEBUG)
     target_compile_options("${TARGET}" -O3)
 elseif (CMAKE_BUILD_TYPE EQUAL "RelWithDebInfo")
+    target_compile_definitions("${TARGET}" -NDEBUG)
     target_compile_options("${TARGET}" -g -O3)
 elseif (CMAKE_BUILD_TYPE EQUAL "MinSizeRel")
+    target_compile_definitions("${TARGET}" -NDEBUG)
     target_compile_options("${TARGET}" -Oz)
 endif()
 
+target_include_directories("${TARGET}" PRIVATE "${VENDOR_DIRECTORY}/marzer/include/")
+
 # set(TESTS_DIRECTORY "${CMAKE_SOURCE_DIR}/tests")
 # include(CTest)
-
-# if (BUILD_TESTING)
-#     add_subdirectory("${VENDOR_DIRECTORY}/Unity")
-#     add_subdirectory("${TESTS_DIRECTORY}/Unity")
-# endif()

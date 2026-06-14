@@ -5,17 +5,21 @@
 #include <string>
 #include <vector>
 
-struct TomlPackage {
+struct TomlPackage
+{
 	std::optional<std::string> name;
-    std::optional<std::string> standard;
+    std::optional<std::string> version;
+	std::optional<std::string> standard;
 };
 
-struct TomlTarget {
+struct TomlTarget
+{
 	std::optional<std::string> name;
 	std::optional<std::vector<std::filesystem::path>> paths;
 };
 
-struct TomlManifest {
+struct TomlManifest
+{
 	std::optional<TomlPackage> package;
 	std::optional<std::vector<TomlTarget>> bin;
 };

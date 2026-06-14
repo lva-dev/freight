@@ -4,6 +4,7 @@
 	#define _GNU_SOURCE
 #endif
 
+#include <algorithm>
 #include <cassert>
 #include <cerrno>
 #include <climits>
@@ -14,19 +15,29 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-#include <dirent.h>
 #include <filesystem>
 #include <format>
 #include <fstream>
 #include <iostream>
-#include <libgen.h>
 #include <print>
+#include <ranges>
+#include <span>
 #include <string>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <system_error>
-#include <unistd.h>
 #include <utility>
 #include <vector>
+
+#ifdef __linux__
+	#include <dirent.h>
+	#include <libgen.h>
+	#include <sys/mman.h>
+	#include <sys/stat.h>
+	#include <sys/types.h>
+	#include <sys/wait.h>
+	#include <unistd.h>
+#else
+	#error "Unsupported platform"
+#endif
+
+#define TOML_EXCEPTIONS 0
+#include "Toml.h"

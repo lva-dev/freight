@@ -1,28 +1,38 @@
-#include "pch.h"
+#include "Pch.h"
 
 #include <algorithm>
+#include <cassert>
 #include <chrono>
 #include <filesystem>
 #include <sys/mman.h>
 #include <vector>
 
-#include "util.h"
-#include "workspace.h"
+#include "Cmds.h"
+#include "Util.h"
+#include "Workspace.h"
 
 static std::vector<std::filesystem::path> expand_linear_paths(
-	std::span<const std::filesystem::path> paths) {
+	std::span<const std::filesystem::path> paths)
+{
 	using namespace std::filesystem;
 
 	std::vector<std::filesystem::path> files;
 
-	for (auto& path : paths) {
-		if (is_regular_file(path)) {
+	for (auto& path : paths)
+	{
+		if (is_regular_file(path))
+		{
 			files.push_back(path);
-		} else if (is_directory(path)) {
-			for (auto& file : recursive_directory_iterator {path}) {
+		}
+		else if (is_directory(path))
+		{
+			for (auto& file : recursive_directory_iterator {path})
+			{
 				files.push_back(file);
 			}
-		} else {
+		}
+		else
+		{
 			assert(false && "expand_paths can only expand regular files and directories");
 		}
 	}
@@ -30,41 +40,48 @@ static std::vector<std::filesystem::path> expand_linear_paths(
 	return files;
 }
 
-struct CompileOptions {
+struct CompileOptions
+{
 	DebugInfo debug_level;
 	OptLevel opt_level;
-    Standard standard;
+	Standard standard;
 };
 
-struct Unit {
+struct Unit
+{
 	const Package& package;
 	const Target& target;
 	const Profile& profile;
 };
 
-struct BuildContext {
+struct BuildContext
+{
 	const GlobalContext& gctx;
 	const Workspace& workspace;
 	std::vector<Unit> roots;
 };
 
-class Linker {
+class Linker
+{
 private:
 	const BuildContext *_ctx;
 	std::vector<std::filesystem::path> _files;
 public:
-	Linker(const BuildContext& ctx) : _ctx {&ctx} {
+	Linker(const BuildContext& ctx) : _ctx {&ctx}
+	{
 	}
 
 	void add_object(const std::filesystem::path& unit);
 	bool link(const std::filesystem::path exe);
 };
 
-void Linker::add_object(const std::filesystem::path& unit) {
+void Linker::add_object(const std::filesystem::path& unit)
+{
 	_files.push_back(unit);
 }
 
-bool Linker::link(const std::filesystem::path exe) {
+bool Linker::link(const std::filesystem::path exe)
+{
 	using namespace std::filesystem;
 
 	create_directories(exe.parent_path());
@@ -72,7 +89,8 @@ bool Linker::link(const std::filesystem::path exe) {
 	auto compiler_path = _ctx->gctx.clang_path();
 	ProcessBuilder pb {compiler_path};
 
-	for (auto& file : _files) {
+	for (auto& file : _files)
+	{
 		pb.add_arg(file);
 	}
 
@@ -80,66 +98,81 @@ bool Linker::link(const std::filesystem::path exe) {
 	pb.add_arg(exe);
 
 	int result = pb.start();
-	if (result != 0) {
+	if (result != 0)
+	{
 		return false;
 	}
 
 	return true;
 }
 
-static char optlevel_to_char(OptLevel level) {
-	if (level <= OptLevel::LEVEL_3) {
+static char optlevel_to_char(OptLevel level)
+{
+	if (level <= OptLevel::LEVEL_3)
+	{
 		return '0' + static_cast<int>(level);
-	} else if (level == OptLevel::LEVEL_S) {
+	}
+	else if (level == OptLevel::LEVEL_S)
+	{
 		return 's';
-	} else if (level == OptLevel::LEVEL_Z) {
+	}
+	else if (level == OptLevel::LEVEL_Z)
+	{
 		return 'z';
 	}
 
 	std::unreachable();
 }
 
-static int debuglevel_to_int(DebugInfo level) {
+static int debuglevel_to_int(DebugInfo level)
+{
 	return static_cast<int>(level);
 }
 
-static std::string standard_to_str(Standard standard) {
-    switch (standard) {
-    case Standard::CXX23:
-        return "c++23";
-    }
+static std::string standard_to_str(Standard standard)
+{
+	switch (standard)
+	{
+	case Standard::CXX23:
+		return "c++23";
+	}
 }
 
 using CompileUnitResult = std::optional<std::filesystem::path>;
 
 CompileUnitResult static compile_unit(const BuildContext& ctx,
 	const Unit& unit,
-	const CompileOptions& opts) {
+	const CompileOptions& opts)
+{
 	using namespace std::filesystem;
 
 	ProcessBuilder clang_base {ctx.gctx.clang_path()};
 
 	clang_base.add_arg("-c");
 
-	if (opts.debug_level != DebugInfo::LEVEL_0) {
+	if (opts.debug_level != DebugInfo::LEVEL_0)
+	{
 		clang_base.add_arg(std::format("-g{}", debuglevel_to_int(opts.debug_level)));
 	}
 
-	if (opts.opt_level != OptLevel::LEVEL_0) {
+	if (opts.opt_level != OptLevel::LEVEL_0)
+	{
 		clang_base.add_arg(std::format("-O{}", optlevel_to_char(opts.opt_level)));
 	}
 
-    clang_base.add_arg(std::format("-std={}", standard_to_str(opts.standard)));
+	clang_base.add_arg(std::format("-std={}", standard_to_str(opts.standard)));
 
 	std::vector<io::AnonymousFile> object_files;
 
 	bool had_error = false;
-	for (auto& source_file : expand_linear_paths(unit.target.paths)) {
+	for (auto& source_file : expand_linear_paths(unit.target.paths))
+	{
 		ProcessBuilder clang {clang_base};
 		clang.add_arg(source_file);
 
 		auto object_file = io::AnonymousFile::create();
-		if (!object_file.is_open()) {
+		if (!object_file.is_open())
+		{
 			bail("failed to build package");
 		}
 
@@ -147,16 +180,20 @@ CompileUnitResult static compile_unit(const BuildContext& ctx,
 		clang.add_arg(object_file.path());
 
 		int result = clang.start();
-		if (result != 0) {
+		if (result != 0)
+		{
 			had_error = true;
-		} else {
+		}
+		else
+		{
 			object_files.emplace_back(std::move(object_file));
 		}
 	}
 
-	if (had_error) {
-        std::string bin_description = ctx.roots.size() > 1
-            ? std::format("(bin \"{}\")", unit.target.name) : "";
+	if (had_error)
+	{
+		std::string bin_description =
+			ctx.roots.size() > 1 ? std::format("(bin \"{}\")", unit.target.name) : "";
 		emit_error("could not compile `{}` {} due to error(s)",
 			unit.package.name(),
 			bin_description);
@@ -164,13 +201,15 @@ CompileUnitResult static compile_unit(const BuildContext& ctx,
 	}
 
 	Linker linker {ctx};
-	for (const auto& file : object_files) {
+	for (const auto& file : object_files)
+	{
 		linker.add_object(file.path());
 	}
 
 	auto binary_path =
 		ctx.workspace.build_dir() / unit.profile.target_subdir / unit.target.name;
-	if (!linker.link(binary_path)) {
+	if (!linker.link(binary_path))
+	{
 		emit_error("could not compile `{}` (bin \"{}\") due to linker error(s)",
 			unit.package.name(),
 			unit.target.name);
@@ -180,16 +219,20 @@ CompileUnitResult static compile_unit(const BuildContext& ctx,
 	return binary_path;
 }
 
-struct CompileResult {
+struct CompileResult
+{
 	std::vector<std::filesystem::path> binaries;
 };
 
-static CompileResult compile(const BuildContext& ctx, const CompileOptions& opts) {
+static CompileResult compile(const BuildContext& ctx, const CompileOptions& opts)
+{
 	CompileResult compilation;
 
-	for (auto& unit : ctx.roots) {
+	for (auto& unit : ctx.roots)
+	{
 		auto result = compile_unit(ctx, unit, opts);
-		if (result) {
+		if (result)
+		{
 			compilation.binaries.push_back(*result);
 		}
 	}
@@ -197,7 +240,8 @@ static CompileResult compile(const BuildContext& ctx, const CompileOptions& opts
 	return compilation;
 }
 
-template<class R, class P> static float to_milliseconds(std::chrono::duration<R, P> d) {
+template<class R, class P> static float to_milliseconds(std::chrono::duration<R, P> d)
+{
 	using std::chrono::duration_cast;
 	using std::chrono::milliseconds;
 	return static_cast<double>(duration_cast<milliseconds>(d).count()) / 1000;
@@ -205,7 +249,8 @@ template<class R, class P> static float to_milliseconds(std::chrono::duration<R,
 
 static CompileResult build_package(const Workspace& ws,
 	const Package& package,
-	std::vector<std::string> targets_to_build = {}) {
+	std::vector<std::string> targets_to_build = {})
+{
 	using std::chrono::steady_clock;
 
 	status("Compiling", "{} ({})", package.name(), package.root().string());
@@ -216,9 +261,11 @@ static CompileResult build_package(const Workspace& ws,
 
 	Profile profile = Profile::DEV_PROFILE;
 
-	for (auto& target : package.targets()) {
+	for (auto& target : package.targets())
+	{
 		if (!targets_to_build.empty() &&
-			!std::ranges::contains(targets_to_build, target.name)) {
+			!std::ranges::contains(targets_to_build, target.name))
+		{
 			continue;
 		}
 
@@ -232,7 +279,7 @@ static CompileResult build_package(const Workspace& ws,
 	CompileOptions opts = {
 		.debug_level = profile.debug,
 		.opt_level = profile.opt_level,
-        .standard = package.standard(),
+		.standard = package.standard(),
 	};
 
 	CompileResult result = compile(bctx, opts);
@@ -243,7 +290,8 @@ static CompileResult build_package(const Workspace& ws,
 	std::string description =
 		opts.opt_level == OptLevel::LEVEL_0 ? "unoptimized" : "optimized";
 
-	if (opts.debug_level != DebugInfo::LEVEL_0) {
+	if (opts.debug_level != DebugInfo::LEVEL_0)
+	{
 		description += " + debuginfo";
 	}
 
@@ -266,7 +314,8 @@ static CompileResult build_package(const Workspace& ws,
 //     return binary;
 // }
 
-void exec_build(const ds::Strings& args) {
+void exec_build(const BuildOptions& opts)
+{
 	using namespace std::filesystem;
 
 	auto cwd = current_path();
@@ -275,7 +324,8 @@ void exec_build(const ds::Strings& args) {
 	build_package(ws, ws.current());
 }
 
-void exec_run(const ds::Strings& args) {
+void exec_run(const RunOptions& opts)
+{
 	using namespace std::filesystem;
 
 	auto cwd = current_path();
@@ -283,13 +333,16 @@ void exec_run(const ds::Strings& args) {
 	Workspace ws {cwd / "Stim.toml", gctx};
 
 	CompileResult result;
-	if (ws.current().targets().size() == 1) {
+	if (ws.current().targets().size() == 1)
+	{
 		result = build_package(ws, ws.current());
 	}
-	// TODO: Implement target selection logic for multiple-target projects
-	// else {
-	// compiliation = build_package(ws, ws.current(), /* targets to run */);
-	// }
+	else {
+        // TODO: Implement target selection logic for multiple-target projects.
+        // For now, assert false
+	    // compiliation = build_package(ws, ws.current(), /* targets to run */);
+        assert(false);
+	}
 
 	auto exe_path = result.binaries.front();
 	auto exe_path_relative = relative(result.binaries.front(), gctx.cwd());
