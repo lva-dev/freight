@@ -117,9 +117,9 @@ private:
 	Manifest _manifest;
 	std::filesystem::path _manifest_path;
 public:
-	Package(Manifest&& manifest, const std::filesystem::path& _manifest_path)
-		: _manifest(manifest),
-		  _manifest_path {_manifest_path}
+	Package(Manifest&& manifest, std::filesystem::path _manifest_path)
+		: _manifest(std::move(manifest)),
+		  _manifest_path {std::move(_manifest_path)}
 	{
 	}
 
@@ -180,6 +180,7 @@ public:
 	using Container = decltype(_packages);
 
 	Packages() = default;
+    ~Packages() = default;
 	Packages(const Packages&) = default;
 	Packages& operator=(const Packages&) = default;
 	Packages(Packages&&) = default;
@@ -215,20 +216,20 @@ public:
 class Workspace
 {
 private:
-	const GlobalContext& _gctx;
+	GlobalContext *_gctx;
 	std::filesystem::path _current_manifest;
 	std::optional<std::filesystem::path> _root_manifest;
 	std::optional<std::filesystem::path> _target_dir;
 	std::optional<std::filesystem::path> _object_dir;
 	Packages _packages;
 
-	Workspace(const GlobalContext& gctx,
+	Workspace(GlobalContext& gctx,
 		std::filesystem::path&& current_manifest,
 		std::optional<std::filesystem::path>&& root_manifest,
 		std::optional<std::filesystem::path>&& target_dir,
 		std::optional<std::filesystem::path>&& object_dir,
 		Packages&& packages)
-		: _gctx {gctx},
+		: _gctx {&gctx},
 		  _current_manifest {std::move(current_manifest)},
 		  _root_manifest {std::move(root_manifest)},
 		  _target_dir {std::move(target_dir)},
@@ -237,13 +238,13 @@ private:
 	{
 	}
 public:
-	Workspace(const std::filesystem::path& current_manifest, const GlobalContext& gctx);
+	Workspace(const std::filesystem::path& current_manifest, GlobalContext& gctx);
 
 	static Workspace open(const GlobalContext& gctx);
 
 	const GlobalContext& gctx() const
 	{
-		return _gctx;
+		return *_gctx;
 	}
 
 	std::filesystem::path root() const

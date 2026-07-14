@@ -72,7 +72,7 @@ static CollectResult<Target> infer_binary_targets(const std::filesystem::path& d
 	return targets;
 }
 
-static CollectResult<Target> infer_targets(const GlobalContext& gctx,
+static CollectResult<Target> infer_targets(GlobalContext& gctx,
 	const std::string& package_name)
 {
 	using namespace std::filesystem;
@@ -115,19 +115,19 @@ static CollectResult<Target> infer_targets(const GlobalContext& gctx,
 
 class ManifestReaderState
 {
-	const GlobalContext& _gctx;
+	GlobalContext *_gctx;
 	std::filesystem::path _manifest_path;
 public:
 	ManifestReaderState(const std::filesystem::path manifest_path,
-		const GlobalContext& gctx)
-		: _gctx {gctx},
+		GlobalContext& gctx)
+		: _gctx {&gctx},
 		  _manifest_path {manifest_path}
 	{
 	}
 
-	const GlobalContext& gctx() const
+	GlobalContext& gctx() const
 	{
-		return _gctx;
+		return *_gctx;
 	}
 
 	const std::filesystem::path& manifest_path() const
@@ -189,7 +189,7 @@ static std::optional<Standard> parse_standard(std::string_view standard)
 	}
 }
 
-static Manifest read_manifest(const GlobalContext& gctx,
+static Manifest read_manifest(GlobalContext& gctx,
 	const std::filesystem::path& manifest_path)
 {
 	TomlManifest toml_manifest = serialize_toml(manifest_path);
@@ -217,7 +217,7 @@ static Manifest read_manifest(const GlobalContext& gctx,
 				{
 					if (!exists(path))
 					{
-						// TODO: Implement logic when a path specified for a target
+						// TODO: Implement logic for when a path specified for a target
 						// doesn't exist
 					}
 				}
@@ -234,7 +234,7 @@ static Manifest read_manifest(const GlobalContext& gctx,
 	}
 	else
 	{
-		auto inferred_targets = ::infer_targets(gctx, package_name);
+		auto inferred_targets = infer_targets(gctx, package_name);
 		if (!inferred_targets)
 		{
 			bail("source file `{}` is not a regular file",
@@ -252,7 +252,7 @@ static Manifest read_manifest(const GlobalContext& gctx,
 				  " [[bin]] section must be present"));
 	}
 
-	Standard standard;
+	Standard standard{};
 	if (toml_manifest.package && toml_manifest.package->standard)
 	{
 		auto& value = *toml_manifest.package->standard;
@@ -298,8 +298,8 @@ static std::optional<std::filesystem::path> find_manifest(
 }
 
 Workspace::Workspace(const std::filesystem::path& current_manifest,
-	const GlobalContext& gctx)
-	: _gctx {gctx}
+	GlobalContext& gctx)
+	: _gctx {&gctx}
 {
 
 	_root_manifest = find_manifest(current_manifest);

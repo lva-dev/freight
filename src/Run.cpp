@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Cmds.h"
+#include "Io.h"
 #include "Util.h"
 #include "Workspace.h"
 
@@ -49,25 +50,25 @@ struct CompileOptions
 
 struct Unit
 {
-	const Package& package;
-	const Target& target;
-	const Profile& profile;
+	const Package *package;
+	const Target *target;
+	const Profile *profile;
 };
 
-struct BuildContext
+struct Build
 {
-	const GlobalContext& gctx;
-	const Workspace& workspace;
+	const GlobalContext *gctx;
+	const Workspace *workspace;
 	std::vector<Unit> roots;
 };
 
 class Linker
 {
 private:
-	const BuildContext *_ctx;
+	const Build *_ctx;
 	std::vector<std::filesystem::path> _files;
 public:
-	Linker(const BuildContext& ctx) : _ctx {&ctx}
+	Linker(const Build& ctx) : _ctx {&ctx}
 	{
 	}
 
@@ -86,7 +87,7 @@ bool Linker::link(const std::filesystem::path exe)
 
 	create_directories(exe.parent_path());
 
-	auto compiler_path = _ctx->gctx.clang_path();
+	auto compiler_path = _ctx->gctx->clang_path();
 	ProcessBuilder pb {compiler_path};
 
 	for (auto& file : _files)
@@ -110,7 +111,7 @@ static char optlevel_to_char(OptLevel level)
 {
 	if (level <= OptLevel::LEVEL_3)
 	{
-		return '0' + static_cast<int>(level);
+		return static_cast<char>('0' + static_cast<int>(level));
 	}
 	else if (level == OptLevel::LEVEL_S)
 	{
@@ -140,13 +141,13 @@ static std::string standard_to_str(Standard standard)
 
 using CompileUnitResult = std::optional<std::filesystem::path>;
 
-CompileUnitResult static compile_unit(const BuildContext& ctx,
+CompileUnitResult static compile_unit(const Build& ctx,
 	const Unit& unit,
 	const CompileOptions& opts)
 {
 	using namespace std::filesystem;
 
-	ProcessBuilder clang_base {ctx.gctx.clang_path()};
+	ProcessBuilder clang_base {ctx.gctx->clang_path()};
 
 	clang_base.add_arg("-c");
 
@@ -165,7 +166,7 @@ CompileUnitResult static compile_unit(const BuildContext& ctx,
 	std::vector<io::AnonymousFile> object_files;
 
 	bool had_error = false;
-	for (auto& source_file : expand_linear_paths(unit.target.paths))
+	for (auto& source_file : expand_linear_paths(unit.target->paths))
 	{
 		ProcessBuilder clang {clang_base};
 		clang.add_arg(source_file);
@@ -193,9 +194,9 @@ CompileUnitResult static compile_unit(const BuildContext& ctx,
 	if (had_error)
 	{
 		std::string bin_description =
-			ctx.roots.size() > 1 ? std::format("(bin \"{}\")", unit.target.name) : "";
-		emit_error("could not compile `{}` {} due to error(s)",
-			unit.package.name(),
+			ctx.roots.size() > 1 ? std::format("(bin \"{}\")", unit.target->name) : "";
+		print_error("could not compile `{}` {} due to error(s)",
+			unit.package->name(),
 			bin_description);
 		return {};
 	}
@@ -207,12 +208,12 @@ CompileUnitResult static compile_unit(const BuildContext& ctx,
 	}
 
 	auto binary_path =
-		ctx.workspace.build_dir() / unit.profile.target_subdir / unit.target.name;
+		ctx.workspace->build_dir() / unit.profile->target_subdir / unit.target->name;
 	if (!linker.link(binary_path))
 	{
-		emit_error("could not compile `{}` (bin \"{}\") due to linker error(s)",
-			unit.package.name(),
-			unit.target.name);
+		print_error("could not compile `{}` (bin \"{}\") due to linker error(s)",
+			unit.package->name(),
+			unit.target->name);
 		return {};
 	}
 
@@ -224,7 +225,7 @@ struct CompileResult
 	std::vector<std::filesystem::path> binaries;
 };
 
-static CompileResult compile(const BuildContext& ctx, const CompileOptions& opts)
+static CompileResult compile(const Build& ctx, const CompileOptions& opts)
 {
 	CompileResult compilation;
 
@@ -244,7 +245,8 @@ template<class R, class P> static float to_milliseconds(std::chrono::duration<R,
 {
 	using std::chrono::duration_cast;
 	using std::chrono::milliseconds;
-	return static_cast<double>(duration_cast<milliseconds>(d).count()) / 1000;
+    constexpr static const double MILLISECONDS_PER_SECOND = 1000;
+	return static_cast<double>(duration_cast<milliseconds>(d).count()) / MILLISECONDS_PER_SECOND;
 }
 
 static CompileResult build_package(const Workspace& ws,
@@ -257,7 +259,7 @@ static CompileResult build_package(const Workspace& ws,
 
 	auto start_time = steady_clock::now();
 
-	BuildContext bctx {.gctx = ws.gctx(), .workspace = ws, .roots = {}};
+	Build bctx {.gctx = &ws.gctx(), .workspace = &ws, .roots = {}};
 
 	Profile profile = Profile::DEV_PROFILE;
 
@@ -270,9 +272,9 @@ static CompileResult build_package(const Workspace& ws,
 		}
 
 		bctx.roots.emplace_back(Unit {
-			.package = package,
-			.target = target,
-			.profile = profile,
+			.package = &package,
+			.target = &target,
+			.profile = &profile,
 		});
 	}
 
@@ -314,7 +316,7 @@ static CompileResult build_package(const Workspace& ws,
 //     return binary;
 // }
 
-void exec_build(const BuildOptions& opts)
+void exec_build(const BuildOptions&)
 {
 	using namespace std::filesystem;
 
@@ -324,7 +326,7 @@ void exec_build(const BuildOptions& opts)
 	build_package(ws, ws.current());
 }
 
-void exec_run(const RunOptions& opts)
+void exec_run(const RunOptions&)
 {
 	using namespace std::filesystem;
 
@@ -337,11 +339,12 @@ void exec_run(const RunOptions& opts)
 	{
 		result = build_package(ws, ws.current());
 	}
-	else {
-        // TODO: Implement target selection logic for multiple-target projects.
-        // For now, assert false
-	    // compiliation = build_package(ws, ws.current(), /* targets to run */);
-        assert(false);
+	else
+	{
+		// TODO: Implement target selection logic for multiple-target projects.
+		// For now, assert false
+		// compiliation = build_package(ws, ws.current(), /* targets to run */);
+		assert(false);
 	}
 
 	auto exe_path = result.binaries.front();

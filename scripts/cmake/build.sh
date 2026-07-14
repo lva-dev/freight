@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-cmake --build build -j "$(nproc)"
+cmake --build build -j "$(nproc)" "$@"

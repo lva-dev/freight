@@ -1,6 +1,7 @@
 #include "Pch.h"
 
 #include "Cmds.h"
+#include "Io.h"
 #include "Util.h"
 #include "Workspace.h"
 
@@ -39,12 +40,12 @@ static bool create_manifest_file(const Package& package)
 
 static bool create_main_cpp_file(const Package& package)
 {
-	auto text = std::format(
+	auto text = 
 		"#include <iostream>\n"
 		"\n"
 		"int main() {{\n"
-		"    std::cout << \"Hello, world!\\n\";    \n"
-		"}}\n");
+		"    std::cout << \"Hello, world!\\n\";\n"
+		"}}\n";
 
 	return io::write_file(package.root() / "src/main.cpp", text);
 }

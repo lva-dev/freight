@@ -4,7 +4,7 @@
 #include "Workspace.h"
 
 void print_parse_error(const toml::parse_error& error) {
-    emit_error("{}", error.description());
+    print_error("{}", error.description());
     auto src = error.source();
     std::println(std::cerr, " --> {}:{}:{}", *src.path, src.end.line, src.end.column);
 }
