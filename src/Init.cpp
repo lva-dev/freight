@@ -78,7 +78,7 @@ static Manifest get_default_manifest([[maybe_unused]] const GlobalContext& gctx,
 
 static bool has_manifest(const std::filesystem::path& dir)
 {
-	auto manifest_path = dir / "Stim.toml";
+	auto manifest_path = dir / "Freight.toml";
 	return std::filesystem::exists(manifest_path);
 }
 
@@ -104,13 +104,13 @@ void exec_init(const InitOptions& opts)
 
 	if (has_manifest(cwd))
 	{
-		bail("`freight init` cannot be run on existing Stim packages");
+		bail("`freight init` cannot be run on existing Freight packages");
 	}
 
 	create_directory_or_bail(cwd, name);
 
 	Manifest manifest = get_default_manifest(gctx, cwd);
-	Package package {std::move(manifest), cwd / "Stim.toml"};
+	Package package {std::move(manifest), cwd / "Freight.toml"};
 	initialize_package(package);
 }
 
@@ -136,6 +136,6 @@ void exec_new(const NewOptions& opts)
 
 	GlobalContext gctx {cwd};
 	Manifest manifest = get_default_manifest(gctx, cwd);
-	Package package {std::move(manifest), cwd / "Stim.toml"};
+	Package package {std::move(manifest), cwd / "Freight.toml"};
 	initialize_package(package);
 }

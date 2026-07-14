@@ -287,7 +287,7 @@ static std::optional<std::filesystem::path> find_manifest(
 	for (auto& component : manifest_path.parent_path())
 	{
 		dir /= component;
-		auto expected_manifest = dir / "Stim.toml";
+		auto expected_manifest = dir / "Freight.toml";
 		if (exists(expected_manifest))
 		{
 			return expected_manifest;
@@ -308,7 +308,7 @@ Workspace::Workspace(const std::filesystem::path& current_manifest,
 	{
 		if (!_root_manifest)
 		{
-			bail("could not find `Stim.toml` in `{}` or any parent directory",
+			bail("could not find `Freight.toml` in `{}` or any parent directory",
 				gctx.cwd().string());
 		}
 		else

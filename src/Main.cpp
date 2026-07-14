@@ -15,9 +15,9 @@ namespace cli {
 
 class StringDeque {
 public:
-    void push(const std::string& str) { deque.push_front(str); }
+    void push_back(const std::string& str) { deque.push_back(str); }
 
-    std::optional<std::string> pop() {
+    std::optional<std::string> pop_front() {
         if (deque.empty()) {
             return {};
         } else {
@@ -57,11 +57,11 @@ public:
 protected:
     virtual void ExecFunc(StringDeque& args) = 0;
 
-    virtual MatchOptResult MatchOpt([[maybe_unused]] std::string_view arg) {
+    virtual MatchOptResult MatchOpt([[maybe_unused]] std::string& arg) {
         return MatchOptResult::None;
     }
     
-    virtual MatchArgResult MatchArg([[maybe_unused]] std::string_view arg) {
+    virtual MatchArgResult MatchArg([[maybe_unused]] std::string& arg) {
         return MatchArgResult::Continue;
     }
 private:
@@ -69,16 +69,15 @@ private:
 };
 
 void Command::Execute(StringDeque& args) {
-    for (auto argOpt = args.pop(); argOpt.has_value(); argOpt = args.pop()) {
-        auto& arg = *argOpt;
-        
-        if (!foundDoubleDash && arg == "--") {
+    for (auto argOpt = args.pop_front(); argOpt.has_value(); argOpt = args.pop_front()) {
+        if (!foundDoubleDash && *argOpt == "--") {
             foundDoubleDash = true;
+            continue;
         }
         
         bool matchedArg = false;
         if (!foundDoubleDash) {
-            auto result = MatchOpt(arg);
+            auto result = MatchOpt(*argOpt);
             if (result == MatchOptResult::Done) {
                 break;
             }
@@ -87,7 +86,7 @@ void Command::Execute(StringDeque& args) {
         }
 
         if (foundDoubleDash || matchedArg) {
-            auto result = MatchArg(arg);
+            auto result = MatchArg(*argOpt);
             if (result == MatchArgResult::Done) {
                 break;
             }
@@ -104,7 +103,7 @@ void Command::Execute(StringDeque& args) {
 using namespace cli;
 
 void print_for_more_information() {
-    std::println("For more information, try '\033[35m--help\033[39m'.");
+    std::println("For more information, try '\033[36m--help\033[39m'.");
 }
 
 [[noreturn]] void bail_with_unexpected_arg(std::string_view arg) {
@@ -113,7 +112,7 @@ void print_for_more_information() {
 }
 
 [[noreturn]] void bail_with_missing_arg(std::string_view arg) {
-    print_error("the required argument '\033[35m{}\033[39m' was not provided", arg);
+    print_error("the required argument '\033[36m{}\033[39m' was not provided", arg);
     std::exit(1);
 }
 
@@ -141,10 +140,10 @@ private:
         exec_new(opts);
     }
 
-    MatchArgResult MatchArg(std::string_view arg) override {
+    MatchArgResult MatchArg(std::string& arg) override {
         if (!path.has_value()) {
             path = std::move(arg);
-            return MatchArgResult::Done;
+            return MatchArgResult::Continue;
         } else {
             bail_with_unexpected_arg(arg);
         }
@@ -198,7 +197,7 @@ private:
     bool foundVersion = false;
     std::optional<std::string> command = {};
     
-    MatchOptResult MatchOpt(std::string_view arg) override {
+    MatchOptResult MatchOpt(std::string& arg) override {
         if (!arg.starts_with('-')) {
             return MatchOptResult::None;
         }
@@ -214,7 +213,7 @@ private:
         return MatchOptResult::Match;
     }
 
-    MatchArgResult MatchArg(std::string_view arg) override {
+    MatchArgResult MatchArg(std::string& arg) override {
         command = std::move(arg);
         return MatchArgResult::Done;
     }
@@ -261,7 +260,7 @@ int main(int argc, char **argv)
     StringDeque argDeque;
     auto args = std::span<char*>{argv, static_cast<std::size_t>(argc)};
     for (std::size_t i = 1; i < args.size(); i++) {
-        argDeque.push(args[i]);
+        argDeque.push_back(args[i]);
     }
 
     MainCommand mainCmd;

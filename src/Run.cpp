@@ -322,7 +322,7 @@ void exec_build(const BuildOptions&)
 
 	auto cwd = current_path();
 	GlobalContext gctx {cwd};
-	Workspace ws {cwd / "Stim.toml", gctx};
+	Workspace ws {cwd / "Freight.toml", gctx};
 	build_package(ws, ws.current());
 }
 
@@ -332,7 +332,7 @@ void exec_run(const RunOptions&)
 
 	auto cwd = current_path();
 	GlobalContext gctx {cwd};
-	Workspace ws {cwd / "Stim.toml", gctx};
+	Workspace ws {cwd / "Freight.toml", gctx};
 
 	CompileResult result;
 	if (ws.current().targets().size() == 1)
