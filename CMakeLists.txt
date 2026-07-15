@@ -26,13 +26,15 @@ set(VENDOR_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/vendor")
 
 add_executable("${TARGET}"
     "${SOURCE_DIRECTORY}/Init.cpp"
-    "${SOURCE_DIRECTORY}/Io.cpp"
     "${SOURCE_DIRECTORY}/Run.cpp"
     "${SOURCE_DIRECTORY}/Main.cpp"
     "${SOURCE_DIRECTORY}/Toml.cpp"
-    "${SOURCE_DIRECTORY}/Util.cpp"
     "${SOURCE_DIRECTORY}/Workspace.cpp"
+    "${SOURCE_DIRECTORY}/Support/Io.cpp"
+    "${SOURCE_DIRECTORY}/Support/Util.cpp"
 )
+
+target_include_directories("${TARGET}" PRIVATE "${SOURCE_DIRECTORY}")
 
 if (CMAKE_BUILD_TYPE EQUAL "Debug")
     target_compile_options("${TARGET}" -g)

@@ -1,268 +1,476 @@
 #include "Pch.h"
 
-#include "Cmds.h"
-#include "Util.h"
-
+#include <any>
 #include <cstddef>
 #include <deque>
+#include <expected>
+#include <format>
 #include <functional>
 #include <optional>
 #include <print>
 #include <span>
+#include <stdexcept>
 #include <string_view>
+#include <unordered_map>
+#include <utility>
+#include <variant>
+#include <vector>
 
-namespace cli {
+#include "Cmds.h"
+#include "Support/Error.h"
+#include "Support/Util.h"
 
-class StringDeque {
+namespace cli
+{
+// struct Error {
+
+// };
+
+// template<>
+// std::string error::error_to_string<Error>(const Error& error) {
+//     return "";
+// }
+
+inline static const std::string MORE_INFO = "For more information, try '\033[36m--help\033[39m'.";
+
+std::string error_unexepected_arg(std::string_view arg)
+{
+	return std::format("unexpected argument '\033[33m{}\033[39m' found", arg);
+}
+
+std::string error_missing_arg(std::string_view arg)
+{
+	return std::format(
+		"the required argument '\033[36m{}\033[39m' was not provided",
+		arg);
+}
+
+std::string error_no_such_command(std::string_view arg)
+{
+	return std::format("no such command `{}`", arg);
+}
+
+template<class T> using Expected = std::expected<T, error::Error>;
+
+class StringDeque
+{
 public:
-    void push_back(const std::string& str) { deque.push_back(str); }
+	void push_back(const std::string& str)
+	{
+		deque.push_back(str);
+	}
 
-    std::optional<std::string> pop_front() {
-        if (deque.empty()) {
-            return {};
-        } else {
-            auto arg = std::move(deque.front());
-            deque.pop_front();
-            return arg;
-        }
-    }
+	std::optional<std::string> pop_front()
+	{
+		if (deque.empty())
+		{
+			return {};
+		}
+		else
+		{
+			auto arg = std::move(deque.front());
+			deque.pop_front();
+			return arg;
+		}
+	}
 
-    [[nodiscard]] bool is_empty() const { return deque.empty(); }
+	[[nodiscard]] bool is_empty() const
+	{
+		return deque.empty();
+	}
 private:
-    std::deque<std::string> deque;
+	std::deque<std::string> deque;
 };
 
-enum class MatchOptResult {
-    Done,
-    Match,
-    None,
-};
+namespace detail
+{
+	struct Matched
+	{
+		std::any value;
+	};
 
-enum class MatchArgResult {
-    Done,
-    Continue,
-};
+	template<class T> struct Many
+	{
+		std::vector<T> values;
+	};
+} // namespace detail
 
-struct Command {
+struct Matches
+{
 public:
-    Command() = default;
-    
-    virtual ~Command() = default;
-    Command(const Command&) = default;
-    Command& operator=(const Command&) = default;
-    Command(Command&&) = default;
-    Command& operator=(Command&&) = default;
+	bool get_flag(const std::string& id) const
+	{
+		const bool *value = get_one<bool>(id);
+		if (value == nullptr)
+		{
+			throw std::invalid_argument {
+				std::format("Invalid match type: Match '{}' is not Action::SetTrue "
+							"or Action::SetFalse",
+					id)};
+		}
+		else
+		{
+			return *value;
+		}
+	}
 
-    void Execute(StringDeque& args);
+	template<class T> const T *get_one(const std::string& id) const
+	{
+		return std::any_cast<T>(&matches.at(id).value);
+	}
+
+	template<class T> const auto get_many(const std::string& id) const
+	{
+		using Many = detail::Many<T>;
+		using View = decltype(std::views::all(Many {}));
+		if (matches.contains(id))
+		{
+			Many *values = std::any_cast<Many>(&matches.at(id).value);
+			if (values == nullptr)
+			{
+				throw_invalid_match_type<T>(id);
+			}
+			else
+			{
+				return std::optional<View>(std::views::all(values->values));
+			}
+		}
+		else
+		{
+			return std::optional<View> {};
+		}
+	}
+public:
+	std::unordered_map<std::string, detail::Matched> matches;
+
+	template<class T> [[noreturn]] void throw_invalid_match_type(const std::string& id)
+	{
+		assert(matches.contains(id));
+		throw std::invalid_argument {
+			std::format("Invalid match type: Match '{}' contains a '{}', not a '{}'",
+				id,
+				matches.at(id).value.type().name(),
+				typeid(T).name())};
+	}
+
+	void add_flag(const std::string& id, bool value)
+	{
+		matches.try_emplace(id, detail::Matched {.value = std::make_any<bool>(value)});
+	}
+
+	template<class T> void add_one(const std::string& id, T&& value)
+	{
+		matches.try_emplace(
+			id, detail::Matched {.value = std::make_any<T>(std::forward<T>((value)))});
+	}
+
+	template<class T> void add_many(const std::string& id, std::vector<T>&& values)
+	{
+		matches.try_emplace(id,
+			detail::Matched {.value = std::make_any<detail::Many<T>>(std::move(values))});
+	}
+};
+
+enum class MatchOptResult
+{
+	Match,
+	Done,
+	UnexpectedArg,
+};
+
+enum class MatchArgResult
+{
+	Match,
+	Done,
+	UnexpectedArg,
+};
+
+struct Command
+{
+public:
+	Command() = default;
+	virtual ~Command() = default;
+	Command(const Command&) = default;
+	Command& operator=(const Command&) = default;
+	Command(Command&&) = default;
+	Command& operator=(Command&&) = default;
+
+	Expected<void> run(StringDeque& args);
 protected:
-    virtual void ExecFunc(StringDeque& args) = 0;
+	virtual Expected<void> execute(StringDeque& args) = 0;
 
-    virtual MatchOptResult MatchOpt([[maybe_unused]] std::string& arg) {
-        return MatchOptResult::None;
-    }
-    
-    virtual MatchArgResult MatchArg([[maybe_unused]] std::string& arg) {
-        return MatchArgResult::Continue;
-    }
+	virtual MatchOptResult match_opt([[maybe_unused]] std::string_view arg,
+		[[maybe_unused]] bool isLong)
+	{
+		return MatchOptResult::UnexpectedArg;
+	}
+
+	virtual MatchArgResult match_arg([[maybe_unused]] const std::string& arg)
+	{
+		return MatchArgResult::UnexpectedArg;
+	}
 private:
-    bool foundDoubleDash = false;
+	bool foundDoubleDash = false;
 };
 
-void Command::Execute(StringDeque& args) {
-    for (auto argOpt = args.pop_front(); argOpt.has_value(); argOpt = args.pop_front()) {
-        if (!foundDoubleDash && *argOpt == "--") {
-            foundDoubleDash = true;
-            continue;
-        }
-        
-        bool matchedArg = false;
-        if (!foundDoubleDash) {
-            auto result = MatchOpt(*argOpt);
-            if (result == MatchOptResult::Done) {
-                break;
-            }
+Expected<void> Command::run(StringDeque& args)
+{
+	for (auto argOpt = args.pop_front(); argOpt.has_value(); argOpt = args.pop_front())
+	{
+		const auto& arg = *argOpt;
 
-            matchedArg = result == MatchOptResult::None;
-        }
+		if (!foundDoubleDash && arg == "--")
+		{
+			foundDoubleDash = true;
+			continue;
+		}
 
-        if (foundDoubleDash || matchedArg) {
-            auto result = MatchArg(*argOpt);
-            if (result == MatchArgResult::Done) {
-                break;
-            }
+		if (!foundDoubleDash)
+		{
+			std::optional<MatchOptResult> result;
+			if (arg.starts_with("--"))
+			{
+				result = match_opt(std::string_view {arg}.substr(2), true);
+			}
+			else if (arg.starts_with('-'))
+			{
+				if (arg.size() == 2)
+				{
+					result = match_opt(std::string_view {arg}.substr(1), false);
+				}
+				else if (arg.size() > 2)
+				{
+					return std::unexpected<error::Error>(
+						std::format("{}\n\n\033[33mnote:\033[39m grouped options "
+									"are not allowed\n\n{}",
+							error_unexepected_arg(arg),
+							MORE_INFO));
+				}
+			}
 
-            assert(result == MatchArgResult::Continue);
-        }
-    }
+			if (result)
+			{
+				if (result == MatchOptResult::Done)
+				{
+					break;
+				}
+				else if (result == MatchOptResult::Match)
+				{
+					continue;
+				}
+				else if (result == MatchOptResult::UnexpectedArg)
+				{
+					return std::unexpected<error::Error>(
+						std::format("{}\n\n", error_unexepected_arg(arg), MORE_INFO));
+				}
+			}
+		}
 
-    ExecFunc(args);
+		auto result = match_arg(arg);
+		if (result == MatchArgResult::Done)
+		{
+			break;
+		}
+		else if (result == MatchArgResult::UnexpectedArg)
+		{
+			return std::unexpected<error::Error>(
+				std::format("{}\n\n", error_unexepected_arg(arg), MORE_INFO));
+		}
+	}
+
+	return execute(args);
 }
-
-}
+} // namespace cli
 
 using namespace cli;
 
-void print_for_more_information() {
-    std::println("For more information, try '\033[36m--help\033[39m'.");
-}
-
-[[noreturn]] void bail_with_unexpected_arg(std::string_view arg) {
-    print_error("unexpected argument '\033[33m{}\033[39m' found", arg);
-    std::exit(1);
-}
-
-[[noreturn]] void bail_with_missing_arg(std::string_view arg) {
-    print_error("the required argument '\033[36m{}\033[39m' was not provided", arg);
-    std::exit(1);
-}
-
-[[noreturn]] void bail_with_no_such_command(std::string_view arg) {
-    print_error("no such command `{}`\n", arg);
-    print_for_more_information();
-    std::exit(1);
-}
-
-class NewCommand final : public Command {
+class NewCommand final : public Command
+{
 public:
-    NewCommand() = default;
+	NewCommand() = default;
 private:
-    std::optional<std::string> path = {};
+	std::optional<std::string> path = {};
 
-    void ExecFunc(StringDeque&) override {
-        if (!path.has_value()) {
-            bail_with_missing_arg("<PATH>");
-        }
+	Expected<void> execute(StringDeque&) override
+	{
+		if (!path.has_value())
+		{
+			return std::unexpected<error::Error>(std::format("{}\n\n", error_missing_arg("<PATH>"), MORE_INFO));
+		}
 
-        NewOptions opts {
-            .path = std::move(*path),
-        };
+		NewOptions opts {
+			.path = std::move(*path),
+		};
 
-        exec_new(opts);
-    }
+		exec_new(opts);
+		return {};
+	}
 
-    MatchArgResult MatchArg(std::string& arg) override {
-        if (!path.has_value()) {
-            path = std::move(arg);
-            return MatchArgResult::Continue;
-        } else {
-            bail_with_unexpected_arg(arg);
-        }
-    }
+	MatchArgResult match_arg(const std::string& arg) override
+	{
+		if (!path.has_value())
+		{
+			path = std::move(arg);
+			return MatchArgResult::Match;
+		}
+		else
+		{
+			return MatchArgResult::UnexpectedArg;
+		}
+	}
 };
 
-class BuildCommand final : public Command {
+class BuildCommand final : public Command
+{
 public:
-    BuildCommand() = default;
+	BuildCommand() = default;
 private:
-    void ExecFunc(StringDeque&) override {
-        BuildOptions opts {
-            .release = false,
-        };
+	Expected<void> execute(StringDeque&) override
+	{
+		BuildOptions opts {
+			.release = false,
+		};
 
-        exec_build(opts);
-    }
+		exec_build(opts);
+		return {};
+	}
 };
 
-class InitCommand final : public Command {
+class InitCommand final : public Command
+{
 public:
-    InitCommand() = default;
+	InitCommand() = default;
 private:
-    void ExecFunc(StringDeque&) override {
-        InitOptions opts {
-            .path = {},
-        };
+	Expected<void> execute(StringDeque&) override
+	{
+		InitOptions opts {
+			.path = {},
+		};
 
-        exec_init(opts);
-    }
+		exec_init(opts);
+		return {};
+	}
 };
 
-class RunCommand final : public Command {
+class RunCommand final : public Command
+{
 public:
-    RunCommand() = default;
+	RunCommand() = default;
 private:
-    void ExecFunc(StringDeque&) override {
-        RunOptions opts {
-            .build_opts = {},
-        };
+	Expected<void> execute(StringDeque&) override
+	{
+		RunOptions opts {
+			.build_opts = {},
+		};
 
-        exec_run(opts);
-    }
+		exec_run(opts);
+		return {};
+	}
 };
 
-class MainCommand final : public Command {
+class MainCommand final : public Command
+{
 public:
-    MainCommand() = default;
+	MainCommand() = default;
 private:
-    bool foundHelp = false;
-    bool foundVersion = false;
-    std::optional<std::string> command = {};
-    
-    MatchOptResult MatchOpt(std::string& arg) override {
-        if (!arg.starts_with('-')) {
-            return MatchOptResult::None;
-        }
+	bool foundHelp = false;
+	bool foundVersion = false;
+	std::optional<std::string> command = {};
 
-        if (!foundHelp && (arg == "-h" || arg == "--help")) {
-            foundHelp = true;
-        } else if (!foundVersion && (arg == "-v" || arg == "--version")) {
-            foundVersion = true;
-        } else {
-            return MatchOptResult::None;
-        }
-        
-        return MatchOptResult::Match;
-    }
+	MatchOptResult match_opt(std::string_view arg, bool isLong) override
+	{
+		if (!foundHelp && ((!isLong && arg == "h") || (isLong && arg == "help")))
+		{
+			foundHelp = true;
+		}
+		else if (!foundVersion &&
+				 ((!isLong && arg == "v") || (isLong && arg == "version")))
+		{
+			foundVersion = true;
+		}
+		else
+		{
+			return MatchOptResult::UnexpectedArg;
+		}
 
-    MatchArgResult MatchArg(std::string& arg) override {
-        command = std::move(arg);
-        return MatchArgResult::Done;
-    }
+		return MatchOptResult::Match;
+	}
 
-    void ExecFunc(StringDeque& args) override {
-        if (foundHelp) {
-            PrintHelp();
-            std::exit(0);
-        } else if (foundVersion) {
-            PrintVersion();
-            std::exit(0);
-        }
+	MatchArgResult match_arg(const std::string& arg) override
+	{
+		command = std::move(arg);
+		return MatchArgResult::Done;
+	}
 
-        if (command.has_value()) {
-            const auto& cmd = *command;
-            if (cmd == "build" || cmd == "b") {
-                return BuildCommand{}.Execute(args);
-            } else if (cmd == "new") {
-                return NewCommand{}.Execute(args);
-            } else if (cmd == "init") {
-                return InitCommand{}.Execute(args);
-            } else if (cmd == "run" || cmd == "r") {
-                return RunCommand{}.Execute(args);
-            } else {
-                bail_with_no_such_command(cmd);
-            }
-        } else {
-            PrintHelp();
-            std::exit(0);
-        }
-    }
+	Expected<void> execute(StringDeque& args) override
+	{
+		if (foundHelp)
+		{
+			print_help();
+			std::exit(0);
+		}
+		else if (foundVersion)
+		{
+			print_version();
+			std::exit(0);
+		}
 
-    static void PrintHelp() {
-        std::println("Help");
-    }
+		if (command.has_value())
+		{
+			const auto& cmd = *command;
+			if (cmd == "build" || cmd == "b")
+			{
+				return BuildCommand {}.run(args);
+			}
+			else if (cmd == "new")
+			{
+				return NewCommand {}.run(args);
+			}
+			else if (cmd == "init")
+			{
+				return InitCommand {}.run(args);
+			}
+			else if (cmd == "run" || cmd == "r")
+			{
+				return RunCommand {}.run(args);
+			}
+			else
+			{
+				return std::unexpected(std::format("{}\n\n{}", error_no_such_command(cmd), MORE_INFO));
+			}
+		}
+		else
+		{
+			print_help();
+			std::exit(0);
+		}
+	}
 
-    static void PrintVersion() {
-        std::println("freight 0.1.0");
-    }
+	static void print_help()
+	{
+		std::println("Help");
+	}
+
+	static void print_version()
+	{
+		std::println("freight 0.1.0");
+	}
 };
 
 int main(int argc, char **argv)
 {
-    StringDeque argDeque;
-    auto args = std::span<char*>{argv, static_cast<std::size_t>(argc)};
-    for (std::size_t i = 1; i < args.size(); i++) {
-        argDeque.push_back(args[i]);
-    }
+	StringDeque argDeque;
+	auto args = std::span<char *> {argv, static_cast<std::size_t>(argc)};
+	for (std::size_t i = 1; i < args.size(); i++)
+	{
+		argDeque.push_back(args[i]);
+	}
 
-    MainCommand mainCmd;
-    mainCmd.Execute(argDeque);
+	MainCommand mainCmd;
+	auto result = mainCmd.run(argDeque);
+	if (!result.has_value())
+	{
+		print_error("{}", result.error().to_string());
+		std::exit(1);
+	}
 }

@@ -1,6 +1,6 @@
-#include "Pch.h"
+#include "../Pch.h"
 
-#include "Io.h"
+#include "Support/Io.h"
 
 namespace io
 {
@@ -34,26 +34,26 @@ AnonymousFile AnonymousFile::create(std::error_code& errc)
 
 AnonymousFile::~AnonymousFile()
 {
-	if (_fd != NO_FD)
+	if (fd != NO_FD)
 	{
-		close(_fd);
+		close(fd);
 	}
 }
 
 AnonymousFile::AnonymousFile(AnonymousFile&& other) noexcept
-	: _fd {std::exchange(other._fd, NO_FD)}
+	: fd {std::exchange(other.fd, NO_FD)}
 {
 }
 
 AnonymousFile& AnonymousFile::operator=(AnonymousFile&& other) noexcept
 {
-	_fd = std::exchange(other._fd, NO_FD);
+	fd = std::exchange(other.fd, NO_FD);
 	return *this;
 }
 
 std::filesystem::path AnonymousFile::path() const
 {
-	return std::format("/proc/self/fd/{}", _fd);
+	return std::format("/proc/self/fd/{}", fd);
 }
 
 // Pipe Pipe::create()

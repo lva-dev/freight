@@ -1,41 +1,48 @@
 #include "Pch.h"
-#include "tomlplusplus/tomlplusplus.h"
-#include "Util.h"
-#include "Workspace.h"
 
-void print_parse_error(const toml::parse_error& error) {
-    print_error("{}", error.description());
-    auto src = error.source();
-    std::println(std::cerr, " --> {}:{}:{}", *src.path, src.end.line, src.end.column);
+#include "Support/Util.h"
+#include "Workspace.h"
+#include "tomlplusplus/tomlplusplus.h"
+
+void print_parse_error(const toml::parse_error& error)
+{
+	print_error("{}", error.description());
+	auto src = error.source();
+	std::println(std::cerr, " --> {}:{}:{}", *src.path, src.end.line, src.end.column);
 }
 
-TomlManifest serialize_toml([[maybe_unused]] const std::filesystem::path& manifest_path)
+TomlManifest serialize_toml([[maybe_unused]] const std::filesystem::path& manifestPath)
 {
-    toml::parse_result result = toml::parse_file(manifest_path.string());
-    if (!result) {
-        // TODO: Emit error
-        bail("");
-    }
-    
-    auto table = result.table();
-    TomlManifest manifest;
+	toml::parse_result result = toml::parse_file(manifestPath.string());
+	if (!result)
+	{
+		// TODO: Emit error
+		bail("");
+	}
 
-    auto package = table["package"];
-    if (package.is_table()) {
-        manifest.package = TomlPackage{};        
-        
-        if (package["name"].is_string()) {
-            manifest.package->name = package["name"].as_string()->get();
-        }
+	auto table = result.table();
+	TomlManifest manifest;
 
-        if (package["version"].is_string()) {
-            manifest.package->version = package["version"].as_string()->get();
-        }
+	auto package = table["package"];
+	if (package.is_table())
+	{
+		manifest.package = TomlPackage {};
 
-        if (package["standard"].is_string()) {
-            manifest.package->standard = package["standard"].as_string()->get();
-        }
-    }
-    
+		if (package["name"].is_string())
+		{
+			manifest.package->name = package["name"].as_string()->get();
+		}
+
+		if (package["version"].is_string())
+		{
+			manifest.package->version = package["version"].as_string()->get();
+		}
+
+		if (package["standard"].is_string())
+		{
+			manifest.package->standard = package["standard"].as_string()->get();
+		}
+	}
+
 	return manifest;
 }

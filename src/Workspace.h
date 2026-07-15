@@ -38,32 +38,35 @@ struct Profile
 	std::string name;
 	// The relative path of this profile's subdirectory in `target/`
 	std::filesystem::path target_subdir = "";
-	OptLevel opt_level;
+	OptLevel optLevel;
 	DebugInfo debug;
 	// If false, defines the `NDEBUG` macro
 	bool debug_assertions = true;
 	bool incremental;
 
-	static const Profile DEV_PROFILE;
-	static const Profile RELEASE_PROFILE;
-};
+	static Profile dev()
+	{
+		return {
+			.name = "dev",
+			.target_subdir = "debug",
+			.optLevel = OptLevel::LEVEL_0,
+			.debug = DebugInfo::LEVEL_3,
+			.debug_assertions = true,
+			.incremental = true,
+		};
+	}
 
-inline const Profile Profile::DEV_PROFILE = {
-	.name = "dev",
-	.target_subdir = "debug",
-	.opt_level = OptLevel::LEVEL_0,
-	.debug = DebugInfo::LEVEL_3,
-	.debug_assertions = true,
-	.incremental = true,
-};
-
-inline const Profile Profile::RELEASE_PROFILE = {
-	.name = "release",
-	.target_subdir = "release",
-	.opt_level = OptLevel::LEVEL_3,
-	.debug = DebugInfo::LEVEL_0,
-	.debug_assertions = false,
-	.incremental = false,
+	static Profile release()
+	{
+		return {
+			.name = "release",
+			.target_subdir = "release",
+			.optLevel = OptLevel::LEVEL_3,
+			.debug = DebugInfo::LEVEL_0,
+			.debug_assertions = false,
+			.incremental = false,
+		};
+	}
 };
 
 struct Target
@@ -74,58 +77,56 @@ struct Target
 
 class Manifest
 {
-	TomlManifest _toml;
-	std::string _name;
-	std::vector<Target> _targets;
-	Standard _standard;
 public:
 	Manifest(TomlManifest&& toml,
 		const std::string& name,
 		std::vector<Target>&& targets,
 		Standard standard)
-		: _toml {std::move(toml)},
-		  _name {name},
-		  _targets {std::move(targets)},
-		  _standard {standard}
+		: toml_ {std::move(toml)},
+		  name_ {name},
+		  targets_ {std::move(targets)},
+		  standard_ {standard}
 	{
 	}
 
 	const std::string& name() const
 	{
-		return _name;
+		return name_;
 	}
 
 	std::span<const Target> targets() const
 	{
-		return _targets;
+		return targets_;
 	}
 
 	const TomlManifest& toml()
 	{
-		return _toml;
+		return toml_;
 	}
 
 	Standard standard() const
 	{
-		return _standard;
+		return standard_;
 	}
+private:
+	TomlManifest toml_;
+	std::string name_;
+	std::vector<Target> targets_;
+	Standard standard_;
 };
 
 class Package
 {
-private:
-	Manifest _manifest;
-	std::filesystem::path _manifest_path;
 public:
-	Package(Manifest&& manifest, std::filesystem::path _manifest_path)
-		: _manifest(std::move(manifest)),
-		  _manifest_path {std::move(_manifest_path)}
+	Package(Manifest&& manifest, std::filesystem::path manifestPath)
+		: manifest_(std::move(manifest)),
+		  manifestPath {std::move(manifestPath)}
 	{
 	}
 
 	const std::filesystem::path& manifest_path() const
 	{
-		return _manifest_path;
+		return manifestPath;
 	}
 
 	std::filesystem::path root() const
@@ -135,7 +136,7 @@ public:
 
 	const Manifest& manifest() const
 	{
-		return _manifest;
+		return manifest_;
 	}
 
 	const std::string& name() const
@@ -152,21 +153,24 @@ public:
 	{
 		return manifest().standard();
 	}
+private:
+	Manifest manifest_;
+	std::filesystem::path manifestPath;
 };
 
 class GlobalContext
 {
 private:
-	std::filesystem::path _cwd;
-	std::filesystem::path _compiler_path;
+	std::filesystem::path cwd_;
+	std::filesystem::path compilerPath;
 public:
-	GlobalContext(const std::filesystem::path& cwd) : _cwd {cwd}
+	GlobalContext(std::filesystem::path cwd) : cwd_ {std::move(cwd)}
 	{
 	}
 
 	const std::filesystem::path& cwd() const
 	{
-		return _cwd;
+		return cwd_;
 	}
 
 	const std::filesystem::path& clang_path() const;
@@ -175,12 +179,12 @@ public:
 class Packages
 {
 private:
-	std::unordered_map<std::filesystem::path, Package> _packages;
+	std::unordered_map<std::filesystem::path, Package> packages_;
 public:
-	using Container = decltype(_packages);
+	using Container = decltype(packages_);
 
 	Packages() = default;
-    ~Packages() = default;
+	~Packages() = default;
 	Packages(const Packages&) = default;
 	Packages& operator=(const Packages&) = default;
 	Packages(Packages&&) = default;
@@ -188,40 +192,40 @@ public:
 
 	const Package& operator[](const std::filesystem::path& path) const
 	{
-		return _packages.at(path);
+		return packages_.at(path);
 	}
 
 	Package& operator[](const std::filesystem::path& path)
 	{
-		return _packages.at(path);
+		return packages_.at(path);
 	}
 
 	Package& insert(const std::filesystem::path& path, const Package& package)
 	{
-		return _packages.insert({path, package}).first->second;
+		return packages_.insert({path, package}).first->second;
 	}
 
 	template<class... Args>
 	Package& emplace(const std::filesystem::path& path, Args... args)
 	{
-		return _packages.try_emplace(path, std::forward<Args>(args)...).first->second;
+		return packages_.try_emplace(path, std::forward<Args>(args)...).first->second;
 	}
 
 	const Container& container() const
 	{
-		return _packages;
+		return packages_;
 	}
 };
 
 class Workspace
 {
 private:
-	GlobalContext *_gctx;
-	std::filesystem::path _current_manifest;
-	std::optional<std::filesystem::path> _root_manifest;
-	std::optional<std::filesystem::path> _target_dir;
-	std::optional<std::filesystem::path> _object_dir;
-	Packages _packages;
+	GlobalContext *gctx_;
+	std::filesystem::path currentManifest_;
+	std::optional<std::filesystem::path> rootManifest;
+	std::optional<std::filesystem::path> targetDir;
+	std::optional<std::filesystem::path> objectDir;
+	Packages packages;
 
 	Workspace(GlobalContext& gctx,
 		std::filesystem::path&& current_manifest,
@@ -229,12 +233,12 @@ private:
 		std::optional<std::filesystem::path>&& target_dir,
 		std::optional<std::filesystem::path>&& object_dir,
 		Packages&& packages)
-		: _gctx {&gctx},
-		  _current_manifest {std::move(current_manifest)},
-		  _root_manifest {std::move(root_manifest)},
-		  _target_dir {std::move(target_dir)},
-		  _object_dir {std::move(object_dir)},
-		  _packages {std::move(packages)}
+		: gctx_ {&gctx},
+		  currentManifest_ {std::move(current_manifest)},
+		  rootManifest {std::move(root_manifest)},
+		  targetDir {std::move(target_dir)},
+		  objectDir {std::move(object_dir)},
+		  packages {std::move(packages)}
 	{
 	}
 public:
@@ -244,7 +248,7 @@ public:
 
 	const GlobalContext& gctx() const
 	{
-		return *_gctx;
+		return *gctx_;
 	}
 
 	std::filesystem::path root() const
@@ -254,26 +258,26 @@ public:
 
 	std::filesystem::path root_manifest() const
 	{
-		return _root_manifest.value_or(_current_manifest);
+		return rootManifest.value_or(currentManifest_);
 	}
 
 	std::filesystem::path target_dir() const
 	{
-		return _target_dir.value_or(root() / "target");
+		return targetDir.value_or(root() / "target");
 	}
 
 	std::filesystem::path build_dir() const
 	{
-		return _object_dir.value_or(target_dir());
+		return objectDir.value_or(target_dir());
 	}
 
 	auto members() const
 	{
-		return std::views::values(_packages.container());
+		return std::views::values(packages.container());
 	}
 
 	const Package& current() const
 	{
-		return _packages[_current_manifest];
+		return packages[currentManifest_];
 	}
 };

@@ -16,10 +16,10 @@ bool write_file(const std::filesystem::path file, std::string_view content);
 struct AnonymousFile
 {
 private:
-	inline static constexpr int NO_FD = -1;
-	int _fd = NO_FD;
+	inline static constexpr const int NO_FD = -1;
+	int fd = NO_FD;
 
-	AnonymousFile(int fd) : _fd {fd}
+	AnonymousFile(int fd) : fd {fd}
 	{
 	}
 public:
@@ -46,7 +46,7 @@ public:
 
 	bool is_open() const
 	{
-		return _fd != NO_FD;
+		return fd != NO_FD;
 	}
 
 	std::filesystem::path path() const;

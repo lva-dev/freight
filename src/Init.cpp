@@ -1,26 +1,26 @@
 #include "Pch.h"
 
 #include "Cmds.h"
-#include "Io.h"
-#include "Util.h"
+#include "Support/Io.h"
+#include "Support/Util.h"
 #include "Workspace.h"
 
 static std::string cause_failed_to_create_dir(const std::filesystem::path& dir,
 	const std::error_code& err)
 {
-	return cause("failed to create directory {}", dir.string()) + "\n\n" +
+	return cause("failed to create directory {}\n\n", dir.string()) +
 		   cause("{} (os error {})", err.message(), err.value());
 }
 
 static void create_directory_or_bail(const std::filesystem::path dir,
-	const std::string package_name)
+	const std::string packageName)
 {
 	std::error_code err;
 	std::filesystem::create_directory(dir, err);
 	if (err)
 	{
 		bail("failed to create package `{}` at `{}`\n\n{}",
-			package_name,
+			packageName,
 			dir.string(),
 			cause_failed_to_create_dir(dir, err));
 	}
@@ -40,7 +40,7 @@ static bool create_manifest_file(const Package& package)
 
 static bool create_main_cpp_file(const Package& package)
 {
-	auto text = 
+	auto text =
 		"#include <iostream>\n"
 		"\n"
 		"int main() {{\n"
@@ -69,24 +69,24 @@ static void initialize_package(const Package& package)
 }
 
 static Manifest get_default_manifest([[maybe_unused]] const GlobalContext& gctx,
-	const std::filesystem::path& package_dir)
+	const std::filesystem::path& packageDir)
 {
-	std::string package_name = package_dir.string();
-	std::vector<Target> targets = {Target {.name = package_name, .paths = {"src"}}};
-	return {{}, package_name, std::move(targets), Standard::CXX23};
+	std::string packageName = packageDir.string();
+	std::vector<Target> targets = {Target {.name = packageName, .paths = {"src"}}};
+	return {{}, packageName, std::move(targets), Standard::CXX23};
 }
 
 static bool has_manifest(const std::filesystem::path& dir)
 {
-	auto manifest_path = dir / "Freight.toml";
-	return std::filesystem::exists(manifest_path);
+	auto manifestPath = dir / "Freight.toml";
+	return std::filesystem::exists(manifestPath);
 }
 
 void exec_init(const InitOptions& opts)
 {
 	using namespace std::filesystem;
 
-	status("Creating", "binary (application) package");
+	print_status("Creating", "binary (application) package");
 
 	path cwd;
 	if (!opts.path)
@@ -95,8 +95,8 @@ void exec_init(const InitOptions& opts)
 	}
 	else
 	{
-		path given_path = *opts.path;
-		cwd = given_path.is_absolute() ? given_path : current_path() / given_path;
+		path givenPath = *opts.path;
+		cwd = givenPath.is_absolute() ? givenPath : current_path() / givenPath;
 	}
 
 	GlobalContext gctx {cwd};
@@ -118,11 +118,11 @@ void exec_new(const NewOptions& opts)
 {
 	using namespace std::filesystem;
 
-	path given_path = opts.path;
-	auto cwd = given_path.is_absolute() ? given_path : current_path() / given_path;
+	path givenPath = opts.path;
+	auto cwd = givenPath.is_absolute() ? givenPath : current_path() / givenPath;
 	std::string name = cwd.filename();
 
-	status("Creating", "binary (application) `{}` package", name);
+	print_status("Creating", "binary (application) `{}` package", name);
 
 	if (exists(cwd))
 	{

@@ -41,7 +41,7 @@ inline std::string cause(std::string_view str)
 }
 
 template<class... Args>
-void status(const std::string_view status, std::format_string<Args...> fmt, Args... args)
+void print_status(const std::string_view status, std::format_string<Args...> fmt, Args... args)
 {
 	std::print("   \033[32m{}\033[m {}\n",
 		status,
@@ -55,9 +55,9 @@ void status(const std::string_view status, std::format_string<Args...> fmt, Args
  */
 class ProcessBuilder
 {
-	std::filesystem::path _path;
-	bool _name_inferred;
-    std::vector<std::string> _args;
+	std::filesystem::path path_;
+	bool nameInferred;
+    std::vector<std::string> args;
 public:
 	ProcessBuilder(const std::filesystem::path& path);
 

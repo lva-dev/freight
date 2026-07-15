@@ -8,8 +8,8 @@
 #include <vector>
 
 #include "Cmds.h"
-#include "Io.h"
-#include "Util.h"
+#include "Support/Io.h"
+#include "Support/Util.h"
 #include "Workspace.h"
 
 static std::vector<std::filesystem::path> expand_linear_paths(
@@ -43,8 +43,8 @@ static std::vector<std::filesystem::path> expand_linear_paths(
 
 struct CompileOptions
 {
-	DebugInfo debug_level;
-	OptLevel opt_level;
+	DebugInfo debugLevel;
+	OptLevel optLevel;
 	Standard standard;
 };
 
@@ -65,10 +65,10 @@ struct Build
 class Linker
 {
 private:
-	const Build *_ctx;
-	std::vector<std::filesystem::path> _files;
+	const Build *ctx;
+	std::vector<std::filesystem::path> files;
 public:
-	Linker(const Build& ctx) : _ctx {&ctx}
+	Linker(const Build& ctx) : ctx {&ctx}
 	{
 	}
 
@@ -78,7 +78,7 @@ public:
 
 void Linker::add_object(const std::filesystem::path& unit)
 {
-	_files.push_back(unit);
+	files.push_back(unit);
 }
 
 bool Linker::link(const std::filesystem::path exe)
@@ -87,10 +87,10 @@ bool Linker::link(const std::filesystem::path exe)
 
 	create_directories(exe.parent_path());
 
-	auto compiler_path = _ctx->gctx->clang_path();
-	ProcessBuilder pb {compiler_path};
+	auto compilerPath = ctx->gctx->clang_path();
+	ProcessBuilder pb {compilerPath};
 
-	for (auto& file : _files)
+	for (auto& file : files)
 	{
 		pb.add_arg(file);
 	}
@@ -147,69 +147,69 @@ CompileUnitResult static compile_unit(const Build& ctx,
 {
 	using namespace std::filesystem;
 
-	ProcessBuilder clang_base {ctx.gctx->clang_path()};
+	ProcessBuilder clangBase {ctx.gctx->clang_path()};
 
-	clang_base.add_arg("-c");
+	clangBase.add_arg("-c");
 
-	if (opts.debug_level != DebugInfo::LEVEL_0)
+	if (opts.debugLevel != DebugInfo::LEVEL_0)
 	{
-		clang_base.add_arg(std::format("-g{}", debuglevel_to_int(opts.debug_level)));
+		clangBase.add_arg(std::format("-g{}", debuglevel_to_int(opts.debugLevel)));
 	}
 
-	if (opts.opt_level != OptLevel::LEVEL_0)
+	if (opts.optLevel != OptLevel::LEVEL_0)
 	{
-		clang_base.add_arg(std::format("-O{}", optlevel_to_char(opts.opt_level)));
+		clangBase.add_arg(std::format("-O{}", optlevel_to_char(opts.optLevel)));
 	}
 
-	clang_base.add_arg(std::format("-std={}", standard_to_str(opts.standard)));
+	clangBase.add_arg(std::format("-std={}", standard_to_str(opts.standard)));
 
-	std::vector<io::AnonymousFile> object_files;
+	std::vector<io::AnonymousFile> objectFiles;
 
-	bool had_error = false;
-	for (auto& source_file : expand_linear_paths(unit.target->paths))
+	bool hadError = false;
+	for (auto& sourceFile : expand_linear_paths(unit.target->paths))
 	{
-		ProcessBuilder clang {clang_base};
-		clang.add_arg(source_file);
+		ProcessBuilder clang {clangBase};
+		clang.add_arg(sourceFile);
 
-		auto object_file = io::AnonymousFile::create();
-		if (!object_file.is_open())
+		auto objectFile = io::AnonymousFile::create();
+		if (!objectFile.is_open())
 		{
 			bail("failed to build package");
 		}
 
 		clang.add_arg("-o");
-		clang.add_arg(object_file.path());
+		clang.add_arg(objectFile.path());
 
 		int result = clang.start();
 		if (result != 0)
 		{
-			had_error = true;
+			hadError = true;
 		}
 		else
 		{
-			object_files.emplace_back(std::move(object_file));
+			objectFiles.emplace_back(std::move(objectFile));
 		}
 	}
 
-	if (had_error)
+	if (hadError)
 	{
-		std::string bin_description =
+		std::string binDescription =
 			ctx.roots.size() > 1 ? std::format("(bin \"{}\")", unit.target->name) : "";
 		print_error("could not compile `{}` {} due to error(s)",
 			unit.package->name(),
-			bin_description);
+			binDescription);
 		return {};
 	}
 
 	Linker linker {ctx};
-	for (const auto& file : object_files)
+	for (const auto& file : objectFiles)
 	{
 		linker.add_object(file.path());
 	}
 
-	auto binary_path =
+	auto binaryPath =
 		ctx.workspace->build_dir() / unit.profile->target_subdir / unit.target->name;
-	if (!linker.link(binary_path))
+	if (!linker.link(binaryPath))
 	{
 		print_error("could not compile `{}` (bin \"{}\") due to linker error(s)",
 			unit.package->name(),
@@ -217,7 +217,7 @@ CompileUnitResult static compile_unit(const Build& ctx,
 		return {};
 	}
 
-	return binary_path;
+	return binaryPath;
 }
 
 struct CompileResult
@@ -251,22 +251,22 @@ template<class R, class P> static float to_milliseconds(std::chrono::duration<R,
 
 static CompileResult build_package(const Workspace& ws,
 	const Package& package,
-	std::vector<std::string> targets_to_build = {})
+	std::vector<std::string> targetsToBuild = {})
 {
 	using std::chrono::steady_clock;
 
-	status("Compiling", "{} ({})", package.name(), package.root().string());
+	print_status("Compiling", "{} ({})", package.name(), package.root().string());
 
-	auto start_time = steady_clock::now();
+	auto startTime = steady_clock::now();
 
 	Build bctx {.gctx = &ws.gctx(), .workspace = &ws, .roots = {}};
 
-	Profile profile = Profile::DEV_PROFILE;
+	Profile profile = Profile::dev();
 
 	for (auto& target : package.targets())
 	{
-		if (!targets_to_build.empty() &&
-			!std::ranges::contains(targets_to_build, target.name))
+		if (!targetsToBuild.empty() &&
+			!std::ranges::contains(targetsToBuild, target.name))
 		{
 			continue;
 		}
@@ -279,29 +279,29 @@ static CompileResult build_package(const Workspace& ws,
 	}
 
 	CompileOptions opts = {
-		.debug_level = profile.debug,
-		.opt_level = profile.opt_level,
+		.debugLevel = profile.debug,
+		.optLevel = profile.optLevel,
 		.standard = package.standard(),
 	};
 
 	CompileResult result = compile(bctx, opts);
 
-	auto end_time = steady_clock::now();
-	auto time_passed = end_time - start_time;
+	auto endTime = steady_clock::now();
+	auto timePassed = endTime - startTime;
 
 	std::string description =
-		opts.opt_level == OptLevel::LEVEL_0 ? "unoptimized" : "optimized";
+		opts.optLevel == OptLevel::LEVEL_0 ? "unoptimized" : "optimized";
 
-	if (opts.debug_level != DebugInfo::LEVEL_0)
+	if (opts.debugLevel != DebugInfo::LEVEL_0)
 	{
 		description += " + debuginfo";
 	}
 
-	status(" Finished",
+	print_status(" Finished",
 		"`{}` profile [{}] target(s) in {:.3}s",
 		profile.name,
 		description,
-		to_milliseconds(time_passed));
+		to_milliseconds(timePassed));
 
 	return result;
 }
@@ -347,10 +347,10 @@ void exec_run(const RunOptions&)
 		assert(false);
 	}
 
-	auto exe_path = result.binaries.front();
-	auto exe_path_relative = relative(result.binaries.front(), gctx.cwd());
-	status("  Running", "`{}`", exe_path_relative.string());
+	auto exePath = result.binaries.front();
+	auto exePathRelative = relative(result.binaries.front(), gctx.cwd());
+	print_status("  Running", "`{}`", exePathRelative.string());
 
-	ProcessBuilder pb {exe_path};
+	ProcessBuilder pb {exePath};
 	exit(pb.start());
 }
