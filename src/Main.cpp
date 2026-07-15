@@ -185,17 +185,17 @@ enum class MatchArgResult
 	UnexpectedArg,
 };
 
-struct Command
+struct CommandParser
 {
 public:
-	Command() = default;
-	virtual ~Command() = default;
-	Command(const Command&) = default;
-	Command& operator=(const Command&) = default;
-	Command(Command&&) = default;
-	Command& operator=(Command&&) = default;
+	CommandParser() = default;
+	virtual ~CommandParser() = default;
+	CommandParser(const CommandParser&) = default;
+	CommandParser& operator=(const CommandParser&) = default;
+	CommandParser(CommandParser&&) = default;
+	CommandParser& operator=(CommandParser&&) = default;
 
-	Expected<void> run(StringDeque& args);
+	Expected<void> parse(StringDeque& args);
 protected:
 	virtual Expected<void> execute(StringDeque& args) = 0;
 
@@ -213,7 +213,7 @@ private:
 	bool foundDoubleDash = false;
 };
 
-Expected<void> Command::run(StringDeque& args)
+Expected<void> CommandParser::parse(StringDeque& args)
 {
 	for (auto argOpt = args.pop_front(); argOpt.has_value(); argOpt = args.pop_front())
 	{
@@ -284,10 +284,10 @@ Expected<void> Command::run(StringDeque& args)
 
 using namespace cli;
 
-class NewCommand final : public Command
+class NewParser final : public CommandParser
 {
 public:
-	NewCommand() = default;
+	NewParser() = default;
 private:
 	std::optional<std::string> path = {};
 
@@ -320,10 +320,10 @@ private:
 	}
 };
 
-class BuildCommand final : public Command
+class BuildParser final : public CommandParser
 {
 public:
-	BuildCommand() = default;
+	BuildParser() = default;
 private:
 	Expected<void> execute(StringDeque&) override
 	{
@@ -336,10 +336,10 @@ private:
 	}
 };
 
-class InitCommand final : public Command
+class InitParser final : public CommandParser
 {
 public:
-	InitCommand() = default;
+	InitParser() = default;
 private:
 	Expected<void> execute(StringDeque&) override
 	{
@@ -352,10 +352,10 @@ private:
 	}
 };
 
-class RunCommand final : public Command
+class RunParser final : public CommandParser
 {
 public:
-	RunCommand() = default;
+	RunParser() = default;
 private:
 	Expected<void> execute(StringDeque&) override
 	{
@@ -368,10 +368,10 @@ private:
 	}
 };
 
-class MainCommand final : public Command
+class MainParser final : public CommandParser
 {
 public:
-	MainCommand() = default;
+	MainParser() = default;
 private:
 	bool foundHelp = false;
 	bool foundVersion = false;
@@ -420,19 +420,19 @@ private:
 			const auto& cmd = *command;
 			if (cmd == "build" || cmd == "b")
 			{
-				return BuildCommand {}.run(args);
+				return BuildParser {}.parse(args);
 			}
 			else if (cmd == "new")
 			{
-				return NewCommand {}.run(args);
+				return NewParser {}.parse(args);
 			}
 			else if (cmd == "init")
 			{
-				return InitCommand {}.run(args);
+				return InitParser {}.parse(args);
 			}
 			else if (cmd == "run" || cmd == "r")
 			{
-				return RunCommand {}.run(args);
+				return RunParser {}.parse(args);
 			}
 			else
 			{
@@ -466,8 +466,8 @@ int main(int argc, char **argv)
 		argDeque.push_back(args[i]);
 	}
 
-	MainCommand mainCmd;
-	auto result = mainCmd.run(argDeque);
+	MainParser mainCmd;
+	auto result = mainCmd.parse(argDeque);
 	if (!result.has_value())
 	{
 		print_error("{}", result.error().to_string());
