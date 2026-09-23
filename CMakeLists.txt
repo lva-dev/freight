@@ -6,6 +6,10 @@ project(
     LANGUAGES CXX
 )
 
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Debug")
+endif()
+
 include(FetchContent)
 
 FetchContent_Declare(GSL
@@ -31,7 +35,7 @@ add_executable("${TARGET}"
     "${SOURCE_DIRECTORY}/Toml.cpp"
     "${SOURCE_DIRECTORY}/Workspace.cpp"
     "${SOURCE_DIRECTORY}/Support/Io.cpp"
-    "${SOURCE_DIRECTORY}/Support/Util.cpp"
+    "${SOURCE_DIRECTORY}/Support/Process.cpp"
 )
 
 target_include_directories("${TARGET}" PRIVATE "${SOURCE_DIRECTORY}")
@@ -52,6 +56,9 @@ endif()
 target_include_directories("${TARGET}" PRIVATE "${VENDOR_DIRECTORY}/marzer/include/")
 
 target_link_libraries("${TARGET}" PRIVATE Microsoft.GSL::GSL)
+
+add_subdirectory(vendor/Clap)
+target_link_libraries("${TARGET}" PRIVATE clap)
 
 # set(TESTS_DIRECTORY "${CMAKE_SOURCE_DIR}/tests")
 # include(CTest)

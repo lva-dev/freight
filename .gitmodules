@@ -2,3 +2,6 @@
 	path = vendor/cwalk
 	url = https://github.com/likle/cwalk.git
 	branch = stable
+[submodule "vendor/Clap"]
+	path = vendor/Clap
+	url = https://github.com/lva-dev/clap-cpp

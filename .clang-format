@@ -2,12 +2,49 @@ Language: Cpp
 Standard: Latest
 ColumnLimit: 90
 
+# Sorting Includes
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex:          '(.*/)?Pch.hpp'
+    CaseSensitive:  true
+    Priority:       -1
+    SortPriority:   -1
+  - Regex:          '^<boost/'
+    CaseSensitive:  false
+    Priority:       1
+    SortPriority:   1
+  - Regex:          '^"tomlplusplus/'
+    CaseSensitive:  false
+    Priority:       2
+    SortPriority:   2
+  - Regex:          '^<gsl/'
+    CaseSensitive:  false
+    Priority:       3
+    SortPriority:   3
+  - Regex:          '^<'
+    CaseSensitive:  false
+    Priority:       4
+    SortPriority:   4
+  - Regex:          '^"Support/'
+    CaseSensitive:  false
+    Priority:       5
+    SortPriority:   6
+  - Regex:          '".*'
+    CaseSensitive:  false
+    Priority:       5
+    SortPriority:   5
+  - Regex:          '.*'
+    CaseSensitive:  false
+    Priority:       6
+    SortPriority:   6
+    
 # Alignment
 AlignAfterOpenBracket: false
-AlignEscapedNewlines: LeftWithLastLine
+AlignEscapedNewlines: Left
 DerivePointerAlignment: false
 PointerAlignment: Right
 ReferenceAlignment: Left
+
 AlignConsecutiveAssignments:
   Enabled: false
   AcrossEmptyLines: false
@@ -33,9 +70,9 @@ AlignConsecutiveMacros:
   AlignFunctionPointers: true
   PadOperators: false
 
-# Initializers
+# Packing/Bin Packing
 PackConstructorInitializers: CurrentLine
-# BinPackLongBracedList: true
+BinPackLongBracedList: true
 BinPackParameters: OnePerLine
 BinPackArguments: false
 Cpp11BracedListStyle: true
@@ -73,36 +110,44 @@ AllowShortIfStatementsOnASingleLine: Never
 
 # Braces
 InsertBraces: false
-BreakBeforeBraces: Allman
-
-# BraceWrapping:
-#   AfterCaseLabel: false
-#   AfterClass: false
-#   AfterControlStatement: Never
-#   AfterEnum: false
-#   AfterFunction: false
-#   AfterNamespace: false
-#   AfterStruct: false
-#   AfterUnion: false
-#   BeforeCatch: false
-#   BeforeElse: false
-#   BeforeLambdaBody: false
-#   BeforeWhile: false
-#   IndentBraces: false
-#   SplitEmptyFunction: false
-#   SplitEmptyRecord: false
-  # SplitEmptyNamespace: false
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: true
+  AfterControlStatement: Always
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  # AfterRequiresExpression: true
+  AfterStruct: true
+  AfterUnion: true
+  # AfterExportBlock: true
+  AfterExternBlock: true
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeLambdaBody: false
+  BeforeWhile: true
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
   
 # Breaks
 AlwaysBreakBeforeMultilineStrings: true
 BreakAdjacentStringLiterals: true
-BreakAfterAttributes: Never
-# BreakBeforeConceptDeclarations: Always
-# BreakBeforeTemplateCloser: false
-# BreakBeforeTernaryOperators: true
-# BreakConstructorInitializers: BeforeColon
-# BreakFunctionDefinitionParameters: false
-# BreakTemplateDeclarations: Yes
+BreakAfterAttributes: Always
+BreakBeforeCloseBracketBracedList: true
+BreakBeforeConceptDeclarations: Always
+BreakBeforeInlineASMColon: Always
+BreakBeforeTemplateCloser: true
+BreakBeforeTernaryOperators: true
+BreakBinaryOperations: RespectPrecedence
+BreakConstructorInitializers: BeforeComma
+BreakFunctionDefinitionParameters: false
+BreakInheritanceList: BeforeComma
+BreakStringLiterals: true
+BreakTemplateDeclarations: Yes
+BreakAfterOpenBracketBracedList: true
 SeparateDefinitionBlocks: Always
 
 # Macros
@@ -110,7 +155,7 @@ SkipMacroDefinitionBody: true
 
 # Spaces
 SpaceAfterCStyleCast: false
-# SpaceAfterOperatorKeyword: false
+SpaceAfterOperatorKeyword: false
 SpaceAfterTemplateKeyword: false
 SpaceAfterLogicalNot: false
 SpaceBeforeRangeBasedForLoopColon: true
@@ -125,19 +170,3 @@ SpacesInParens: Never
 SpacesInAngles: Never
 SpacesInSquareBrackets: false
 SpacesInContainerLiterals: true
-
-# Sorting Includes
-IncludeBlocks: Regroup
-IncludeCategories:
-  - Regex:          '(.*/)?Pch.h'
-    CaseSensitive:  true
-    Priority:       -1
-    SortPriority:   -1
-  - Regex:          '^<'
-    CaseSensitive:  false
-    Priority:       1
-    SortPriority:   1
-  - Regex:          ".*"
-    CaseSensitive:  false
-    Priority:       2
-    SortPriority:   2

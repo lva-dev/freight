@@ -24,4 +24,4 @@ struct TomlManifest
 	std::optional<std::vector<TomlTarget>> bin;
 };
 
-TomlManifest serialize_toml(const std::filesystem::path& manifest_path);
+auto serialize_toml(const std::filesystem::path& manifest_path) -> TomlManifest;

@@ -1,21 +1,24 @@
-#include "Pch.h"
+#include "Pch.hpp"
 
-#include "Workspace.h"
+#include "Workspace.hpp"
+
+#include <gsl/zstring>
 
 #include <cstring>
 #include <expected>
 #include <filesystem>
-#include <gsl/zstring>
 #include <optional>
 #include <string>
-#include <sys/stat.h>
 #include <utility>
 #include <vector>
 
-#include "Toml.h"
-#include "Support/Util.h"
+#include "Error.hpp"
+#include "Toml.hpp"
+#include "Support/Ranges.hpp"
 
-static bool is_real_cpp_file(const std::filesystem::path file)
+using namespace freight;
+
+static auto is_real_cpp_file(const std::filesystem::path file) -> bool
 {
 	return std::filesystem::is_regular_file(file) && file.extension() == ".cpp";
 }
@@ -23,8 +26,8 @@ static bool is_real_cpp_file(const std::filesystem::path file)
 template<class T>
 using CollectResult = std::expected<std::vector<T>, std::filesystem::directory_entry>;
 
-static CollectResult<std::filesystem::path> collect_target_sources(
-	const std::filesystem::path& dir)
+static auto collect_target_sources(
+	const std::filesystem::path& dir) -> CollectResult<std::filesystem::path>
 {
 	using namespace std::filesystem;
 
@@ -44,7 +47,7 @@ static CollectResult<std::filesystem::path> collect_target_sources(
 	return paths;
 }
 
-static CollectResult<Target> infer_binary_targets(const std::filesystem::path& dir)
+static auto infer_binary_targets(const std::filesystem::path& dir) -> CollectResult<Target>
 {
 	using namespace std::filesystem;
 
@@ -72,8 +75,8 @@ static CollectResult<Target> infer_binary_targets(const std::filesystem::path& d
 	return targets;
 }
 
-static CollectResult<Target> infer_targets(GlobalContext& gctx,
-	const std::string& packageName)
+static auto infer_targets(GlobalContext& gctx,
+	const std::string& packageName) -> CollectResult<Target>
 {
 	using namespace std::filesystem;
 
@@ -96,7 +99,7 @@ static CollectResult<Target> infer_targets(GlobalContext& gctx,
 					return std::unexpected(binaryTargets.error());
 				}
 
-				ranges::move_back_range(targets, *binaryTargets);
+				support::ranges::move_back_range(targets, *binaryTargets);
 			}
 			else
 			{
@@ -119,29 +122,29 @@ class ManifestReaderState
 	std::filesystem::path manifestPath;
 public:
 	ManifestReaderState(const std::filesystem::path manifestPath, GlobalContext& gctx)
-		: gctx_ {&gctx},
-		  manifestPath {manifestPath}
-	{
-	}
+		: gctx_ {&gctx}
+		, manifestPath {manifestPath}
+	{}
 
-	GlobalContext& gctx() const
+	auto gctx() const -> GlobalContext&
 	{
 		return *gctx_;
 	}
 
-	const std::filesystem::path& manifest_path() const
+	auto manifest_path() const -> const std::filesystem::path&
 	{
 		return manifestPath;
 	}
 
 	[[noreturn]] void fail(std::string_view message) const
 	{
-		bail("failed to parse manifest at `{}`\n\n{}", manifestPath.string(), message);
+		error::bail(
+			"failed to parse manifest at `{}`\n\n{}", manifestPath.native(), message);
 	}
 };
 
-static std::filesystem::path infer_target_path(ManifestReaderState& mrs,
-	const std::string targetName)
+static auto infer_target_path(ManifestReaderState& mrs,
+	const std::string targetName) -> std::filesystem::path
 {
 	using namespace std::filesystem;
 
@@ -156,9 +159,9 @@ static std::filesystem::path infer_target_path(ManifestReaderState& mrs,
 	if (foundSource1 && foundSource2)
 	{
 		mrs.fail(
-			cause("cannot infer path for `{0}` bin\n"
-				  "Cargo doesn't know which to use because multiple target files"
-				  " found at `src/bin/{0}/main.c` and `src/bin/{0}.c`.",
+			error::cause("cannot infer path for `{0}` bin\n"
+						 "Cargo doesn't know which to use because multiple target files"
+						 " found at `src/bin/{0}/main.c` and `src/bin/{0}.c`.",
 				targetName));
 	}
 	else if (foundSource1)
@@ -171,16 +174,16 @@ static std::filesystem::path infer_target_path(ManifestReaderState& mrs,
 	}
 
 	mrs.fail(
-		cause("can't find `{0}` bin at `src/bin/{0}.c` or `src/bin/{0}/main.c`.\n"
-			  "Please specify bin.path if you want to use a non-default path.",
+		error::cause("can't find `{0}` bin at `src/bin/{0}.c` or `src/bin/{0}/main.c`.\n"
+					 "Please specify bin.path if you want to use a non-default path.",
 			targetName));
 }
 
-static std::optional<Standard> parse_standard(std::string_view standard)
+static auto parse_standard(std::string_view standard) -> std::optional<Standard>
 {
 	if (standard == "23")
 	{
-		return Standard::CXX23;
+		return Standard::Cpp23;
 	}
 	else
 	{
@@ -188,15 +191,14 @@ static std::optional<Standard> parse_standard(std::string_view standard)
 	}
 }
 
-static Manifest read_manifest(GlobalContext& gctx,
-	const std::filesystem::path& manifestPath)
+static auto read_manifest(GlobalContext& gctx, const std::filesystem::path& path) -> Manifest
 {
-	TomlManifest tomlManifest = serialize_toml(manifestPath);
+	TomlManifest tomlManifest = serialize_toml(path);
 
-	ManifestReaderState mrs {manifestPath, gctx};
+	ManifestReaderState mrs {path, gctx};
 
 	// TODO: Check deserialized manifest for package name instead
-	std::string packageName = manifestPath.parent_path().filename();
+	std::string packageName = path.parent_path().filename();
 
 	std::vector<Target> targets;
 	if (tomlManifest.bin)
@@ -236,19 +238,19 @@ static Manifest read_manifest(GlobalContext& gctx,
 		auto inferredTargets = infer_targets(gctx, packageName);
 		if (!inferredTargets)
 		{
-			bail("source file `{}` is not a regular file",
-				inferredTargets.error().path().string());
+			error::bail("source file `{}` is not a regular file",
+				inferredTargets.error().path().native());
 		}
 
-		ranges::move_back_range(targets, *inferredTargets);
+		support::ranges::move_back_range(targets, *inferredTargets);
 	}
 
 	if (targets.empty())
 	{
 		mrs.fail(
-			cause("no targets specified in the manifest\n"
-				  "  either src/lib.rs, src/main.rs, a [lib] section, or"
-				  " [[bin]] section must be present"));
+			error::cause("no targets specified in the manifest\n"
+						 "  either src/lib.rs, src/main.rs, a [lib] section, or"
+						 " [[bin]] section must be present"));
 	}
 
 	Standard standard {};
@@ -258,10 +260,10 @@ static Manifest read_manifest(GlobalContext& gctx,
 		auto stdopt = parse_standard(value);
 		if (!stdopt)
 		{
-			// TODO: Emit error or bail
+			// TODO: Emit error or error::bail
 			mrs.fail(std::format("{}\n\n{}",
-				cause("failed to parse the `standard` key"),
-				cause(std::format(
+				error::cause("failed to parse the `standard` key"),
+				error::cause(std::format(
 					"supported standard values are `23`, but `{}` is unknown", value))));
 		}
 		else
@@ -271,17 +273,18 @@ static Manifest read_manifest(GlobalContext& gctx,
 	}
 	else
 	{
-		standard = Standard::CXX23;
+		standard = Standard::Cpp23;
 	}
 
-	return Manifest {std::move(tomlManifest), packageName, std::move(targets), standard};
+	return Manifest::create(
+		std::move(tomlManifest), std::move(packageName), std::move(targets), standard);
 }
 
-static std::optional<std::filesystem::path> find_manifest(
-	const std::filesystem::path& manifestPath)
+static auto find_root_manifest(
+	const std::filesystem::path& currentManifest) -> std::optional<std::filesystem::path>
 {
 	std::filesystem::path dir;
-	for (auto& component : manifestPath.parent_path())
+	for (auto& component : currentManifest.parent_path())
 	{
 		dir /= component;
 		auto expectedManifest = dir / "Freight.toml";
@@ -294,42 +297,38 @@ static std::optional<std::filesystem::path> find_manifest(
 	return {};
 }
 
-Workspace::Workspace(const std::filesystem::path& currentManifest, GlobalContext& gctx)
+freight::Workspace::Workspace(const std::filesystem::path& currentManifest,
+	GlobalContext& gctx)
 	: gctx_ {&gctx}
 {
-
-	rootManifest = find_manifest(currentManifest);
-
-	if (!std::filesystem::exists(currentManifest))
+    
+    if (!std::filesystem::exists(currentManifest))
 	{
+        rootManifest = find_root_manifest(currentManifest);
 		if (!rootManifest)
 		{
-			bail("could not find `Freight.toml` in `{}` or any parent directory",
-				gctx.cwd().string());
+			error::bail("could not find `Freight.toml` in `{}` or any parent directory",
+				gctx.cwd().native());
 		}
-		else
-		{
-			currentManifest_ = *rootManifest;
-		}
+
+        currentManifest_ = *rootManifest;
 	}
 	else
 	{
 		currentManifest_ = currentManifest;
 	}
 
-	packages.emplace(currentManifest,
-		Package {
-			read_manifest(gctx, currentManifest),
-			currentManifest,
-		});
+	auto inferredPackage = Package::create(
+		read_manifest(gctx, currentManifest), std::filesystem::path {currentManifest});
+	packages.emplace(currentManifest, std::move(inferredPackage));
 }
 
-static std::filesystem::path search_path(const std::filesystem::path& file)
+static auto search_path(const std::filesystem::path& file) -> std::optional<std::filesystem::path>
 {
 	using namespace std::filesystem;
 
-	gsl::zstring pathEnv = getenv("PATH");
-	if (!pathEnv)
+	gsl::zstring pathEnv = std::getenv("PATH");
+	if (pathEnv == nullptr)
 	{
 		return {};
 	}
@@ -349,7 +348,7 @@ static std::filesystem::path search_path(const std::filesystem::path& file)
 	return {};
 }
 
-const std::filesystem::path& GlobalContext::clang_path() const
+auto freight::GlobalContext::compiler_path() const -> const std::filesystem::path&
 {
 	static std::filesystem::path cachedPath;
 
@@ -361,7 +360,14 @@ const std::filesystem::path& GlobalContext::clang_path() const
 
 	if (cachedPath.empty())
 	{
-		cachedPath = search_path("clang++");
+        auto path = search_path("clang++");
+        if (!path.has_value())
+        {
+            // TODO: Error is clang++ isn't installed
+            assert(false && "Failed to find clang++");
+        }
+        
+		cachedPath = *std::move(path);
 	}
 
 	return cachedPath;

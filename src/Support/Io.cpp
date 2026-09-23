@@ -1,10 +1,13 @@
-#include "../Pch.h"
+#include "../Pch.hpp"
 
-#include "Support/Io.h"
+#include "Support/Io.hpp"
 
-namespace io
+#include <expected>
+#include <utility>
+
+namespace support::io
 {
-bool write_file(const std::filesystem::path file, std::string_view content)
+auto write_file(const std::filesystem::path& file, std::string_view content) -> bool
 {
 	std::ofstream stream {file};
 	if (!stream)
@@ -16,13 +19,14 @@ bool write_file(const std::filesystem::path file, std::string_view content)
 	return true;
 }
 
-AnonymousFile AnonymousFile::create(std::error_code& errc)
+auto AnonymousFile::create() -> std::expected<AnonymousFile, std::error_code>
 {
 	static constexpr int NO_FLAGS = 0;
 	int fd = memfd_create("", NO_FLAGS);
 	if (fd == -1)
 	{
-		errc = std::error_code(errno, std::system_category());
+		return std::unexpected<std::error_code>(
+			std::in_place, errno, std::system_category());
 	}
 	else
 	{
@@ -36,22 +40,21 @@ AnonymousFile::~AnonymousFile()
 {
 	if (fd != NO_FD)
 	{
-		close(fd);
+		::close(fd);
 	}
 }
 
 AnonymousFile::AnonymousFile(AnonymousFile&& other) noexcept
 	: fd {std::exchange(other.fd, NO_FD)}
-{
-}
+{}
 
-AnonymousFile& AnonymousFile::operator=(AnonymousFile&& other) noexcept
+auto AnonymousFile::operator=(AnonymousFile&& other) noexcept -> AnonymousFile&
 {
 	fd = std::exchange(other.fd, NO_FD);
 	return *this;
 }
 
-std::filesystem::path AnonymousFile::path() const
+auto AnonymousFile::path() const -> std::filesystem::path
 {
 	return std::format("/proc/self/fd/{}", fd);
 }
@@ -93,4 +96,4 @@ std::filesystem::path AnonymousFile::path() const
 // 	int fd = (is_named()) ? std::get<1>(*_id) : std::get<0>(*_id)[1];
 // 	return std::ofstream {std::format("/proc/self/fd/{}", fd)};
 // }
-} // namespace io
+} // namespace support::io

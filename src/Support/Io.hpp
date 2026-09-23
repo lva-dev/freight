@@ -1,12 +1,13 @@
 #pragma once
 
+#include <expected>
 #include <filesystem>
 #include <string_view>
 #include <variant>
 
-namespace io
+namespace support::io
 {
-bool write_file(const std::filesystem::path file, std::string_view content);
+auto write_file(const std::filesystem::path& file, std::string_view content) -> bool;
 
 /**
  * A handle to an anonymous file, that is, a memory-mapped file without a name in the
@@ -20,36 +21,24 @@ private:
 	int fd = NO_FD;
 
 	AnonymousFile(int fd) : fd {fd}
-	{
-	}
-public:
+	{}
+
 	AnonymousFile() = default;
+public:
+	static auto create() -> std::expected<AnonymousFile, std::error_code>;
 
-	static AnonymousFile create()
-	{
-		std::error_code errc;
-		auto file = create(errc);
-		if (errc)
-		{
-			throw std::system_error {errc};
-		}
-
-		return file;
-	}
-
-	static AnonymousFile create(std::error_code& errc);
 	~AnonymousFile();
 	AnonymousFile(const AnonymousFile&) = delete;
-	AnonymousFile& operator=(const AnonymousFile&) = delete;
+	auto operator=(const AnonymousFile&) -> AnonymousFile& = delete;
 	AnonymousFile(AnonymousFile&&) noexcept;
-	AnonymousFile& operator=(AnonymousFile&&) noexcept;
+	auto operator=(AnonymousFile&&) noexcept -> AnonymousFile&;
 
-	bool is_open() const
+	[[nodiscard]] auto is_open() const -> bool
 	{
 		return fd != NO_FD;
 	}
 
-	std::filesystem::path path() const;
+	[[nodiscard]] auto path() const -> std::filesystem::path;
 };
 
 /**
@@ -90,4 +79,4 @@ public:
 // 	std::ifstream read_end() const;
 // 	std::ofstream write_end() const;
 // };
-} // namespace io
+} // namespace support::io

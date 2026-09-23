@@ -6,10 +6,10 @@ Freight is built using CMake, so you can build it like any other CMake project:
 ```
 cmake -S . -B build
 ```
-or, you can run the [build script](scripts/build.sh) in the `scripts` directory (must have CMake installed):
+or, you can run the [build script](scripts/build..hpp) in the `scripts` directory (must have CMake installed):
 ```
-chmod +x scripts/build.sh
-scripts/build.sh
+chmod +x scripts/build..hpp
+scripts/build..hpp
 ```
 Eventually, Freight will be built with Freight once support for libraries and incremental builds is added.
 
