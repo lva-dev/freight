@@ -1,16 +1,20 @@
-Checks: 'core-*,cppcoreguidelines-*,modernize-*,readability-*
-WarningsAsErrors: true
-HeaderFilterRegex: ['hpp', 'h', 'hxx', 'ipp', 'ixx']
+Checks: 'cppcoreguidelines-*,-cppcoreguidelines-pro-bounds-avoid-unchecked-container-access,modernize-*,readability-*,-readability-named-parameter'
+WarningsAsErrors: ''
 ImplementationFileExtensions: ['cpp', 'c', 'cc', 'cxx', 'cppm']
+HeaderFileExtensions: ['hpp', 'h', 'hxx', 'ipp', 'ixx']
 HeaderFilterRegex: '.*'
 FormatStyle: none
 InheritParentConfig: false
 CheckOptions:
   modernize-use-override.IgnoreDestructors: false
   modernize-use-trailing-return-type.TransformFunctions: true
+  readability-trailing-comma.SingleLineCommaPolicy: 'Ignore'
   readability-uppercase-literal-suffix.NewSuffixes: 'L;LL;LU;LLU'
+  readability-identifier-length.MinimumVariableNameLength: 1
+  readability-identifier-length.MinimumParameterNameLength: 1
+  readability-identifier-length.MinimumLoopCounterNameLength: 1
   readability-identifier-naming.DefaultCase: lower_case
-  readability-identifier-naming.PrivateMemberIgnoredRegexp: '^[a-z][a-z0-9_]*_'
+  readability-identifier-naming.MemberIgnoredRegexp: '^[a-z][a-z0-9_]*_$'
   readability-identifier-naming.AbstractClassCase: CamelCase
   readability-identifier-naming.ClassCase: CamelCase
   readability-identifier-naming.ConceptCase: CamelCase
