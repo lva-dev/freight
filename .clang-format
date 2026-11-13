@@ -13,30 +13,34 @@ IncludeCategories:
     CaseSensitive:  false
     Priority:       1
     SortPriority:   1
-  - Regex:          '^"tomlplusplus/'
+  - Regex:          '^<tomlplusplus/'
     CaseSensitive:  false
     Priority:       2
     SortPriority:   2
-  - Regex:          '^<gsl/'
+  - Regex:          '^<clap/'
     CaseSensitive:  false
     Priority:       3
     SortPriority:   3
-  - Regex:          '^<'
+  - Regex:          '^<gsl/'
     CaseSensitive:  false
     Priority:       4
     SortPriority:   4
-  - Regex:          '^"Support/'
-    CaseSensitive:  false
-    Priority:       5
-    SortPriority:   6
-  - Regex:          '".*'
+  - Regex:          '^<'
     CaseSensitive:  false
     Priority:       5
     SortPriority:   5
-  - Regex:          '.*'
+  - Regex:          '^"Support/'
+    CaseSensitive:  false
+    Priority:       6
+    SortPriority:   7
+  - Regex:          '".*'
     CaseSensitive:  false
     Priority:       6
     SortPriority:   6
+  - Regex:          '.*'
+    CaseSensitive:  false
+    Priority:       7
+    SortPriority:   7
     
 # Alignment
 AlignAfterOpenBracket: false
