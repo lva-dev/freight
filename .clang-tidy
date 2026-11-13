@@ -1,55 +1,38 @@
-Checks:          'clang-diagnostic-*,clang-analyzer-*,cppcoreguidelines-*,modernize-*,readability-identifier-naming-*,,-cppcoreguidelines-pro-bounds-avoid-unchecked-container-access'
+Checks: 'core-*,cppcoreguidelines-*,modernize-*,readability-*
 WarningsAsErrors: true
-HeaderFilterRegex: ''
-FormatStyle:     google
+HeaderFilterRegex: ['hpp', 'h', 'hxx', 'ipp', 'ixx']
+ImplementationFileExtensions: ['cpp', 'c', 'cc', 'cxx', 'cppm']
+HeaderFilterRegex: '.*'
+FormatStyle: none
+InheritParentConfig: false
 CheckOptions:
-  - key:             cert-dcl16-c.NewSuffixes
-    value:           'L;LL;LU;LLU'
-  - key:             cert-oop54-cpp.WarnOnlyIfThisHasSuspiciousField
-    value:           '0'
-  - key:             cppcoreguidelines-explicit-virtual-functions.IgnoreDestructors
-    value:           '1'
-  - key:             cppcoreguidelines-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic
-    value:           '1'
-  - key:             google-readability-braces-around-statements.ShortStatementLines
-    value:           '1'
-  - key:             google-readability-function-size.StatementThreshold
-    value:           '800'
-  - key:             google-readability-namespace-comments.ShortNamespaceLines
-    value:           '10'
-  - key:             google-readability-namespace-comments.SpacesBeforeComments
-    value:           '2'
-  - key:             modernize-loop-convert.MaxCopySize
-    value:           '16'
-  - key:             modernize-loop-convert.MinConfidence
-    value:           reasonable
-  - key:             modernize-loop-convert.NamingStyle
-    value:           CamelCase
-  - key:             modernize-pass-by-value.IncludeStyle
-    value:           llvm
-  - key:             modernize-replace-auto-ptr.IncludeStyle
-    value:           llvm
-  - key:             modernize-use-nullptr.NullMacros
-    value:           'NULL'
-  - key:             readability-identifier-naming.ClassCase
-    value:           CamelCase
-  - key:             readability-identifier-naming.FunctionCase
-    value:           lower_case
-  - key:             readability-identifier-naming.VariableCase
-    value:           camelBack
-  - key:             readability-identifier-naming.ParameterCase
-    value:           camelBack
-  - key:             readability-identifier-naming.ConstantParameterCase
-    value:           camelBack
-  - key:             readability-identifier-naming.ConstantPointerParameterCase
-    value:           camelBack
-  - key:             readability-identifier-naming.PrivateMemberCase
-    value:           camelBack
-  - key:             readability-identifier-naming.PrivateMemberIgnoredRegexp
-    value:           '^[a-z0-9]+([A-Z0-9][a-z0-9]+)*_'
-  - key:             readability-identifier-naming.StaticConstantCase
-    value:           UPPER_CASE
-  - key:             readability-identifier-naming.StaticConstexprVariableCase
-    value:           UPPER_CASE
-  - key:             readability-identifier-naming.MacroDefinitionCase
-    value:           UPPER_CASE
+  modernize-use-override.IgnoreDestructors: false
+  modernize-use-trailing-return-type.TransformFunctions: true
+  readability-uppercase-literal-suffix.NewSuffixes: 'L;LL;LU;LLU'
+  readability-identifier-naming.DefaultCase: lower_case
+  readability-identifier-naming.PrivateMemberIgnoredRegexp: '^[a-z][a-z0-9_]*_'
+  readability-identifier-naming.AbstractClassCase: CamelCase
+  readability-identifier-naming.ClassCase: CamelCase
+  readability-identifier-naming.ConceptCase: CamelCase
+  readability-identifier-naming.EnumCase: CamelCase
+  readability-identifier-naming.EnumConstantCase: CamelCase
+  readability-identifier-naming.ScopedEnumConstantCase: CamelCase
+  readability-identifier-naming.StructCase: CamelCase
+  readability-identifier-naming.TemplateParameterCase: CamelCase
+  readability-identifier-naming.TemplateTemplateParameterCase: CamelCase
+  readability-identifier-naming.TypeAliasCase: CamelCase
+  readability-identifier-naming.TypedefCase: CamelCase
+  readability-identifier-naming.TypeTemplateParameterCase: CamelCase
+  readability-identifier-naming.UnionCase: CamelCase
+  readability-identifier-naming.ValueTemplateParameterCase: CamelCase
+  readability-identifier-naming.ClassConstexprCase: UPPER_CASE
+  readability-identifier-naming.ClassConstantCase: UPPER_CASE
+  readability-identifier-naming.GlobalConstantCase: UPPER_CASE
+  readability-identifier-naming.GlobalConstantPointerCase: UPPER_CASE
+  readability-identifier-naming.GlobalConstexprVariableCase: UPPER_CASE
+  readability-identifier-naming.GlobalPointerCase: UPPER_CASE
+  readability-identifier-naming.GlobalVariableCase: UPPER_CASE
+  readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
+  readability-identifier-naming.StaticConstantCase: UPPER_CASE
+  readability-identifier-naming.StaticConstexprVariableCase: UPPER_CASE
+  readability-identifier-naming.StaticVariableCase: UPPER_CASE
