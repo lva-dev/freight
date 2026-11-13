@@ -29,20 +29,27 @@ struct Unit
 	const Profile *profile;
 };
 
-struct Build
+struct BuildContext
 {
 	const GlobalContext *gctx;
 	const Workspace *workspace;
 	std::vector<Unit> roots;
 };
 
+struct BuildRunner
+{
+    const BuildContext *bcx;
+
+    
+};
+
 class Linker
 {
 private:
-	const Build *ctx;
+	const BuildContext *ctx;
 	std::vector<std::filesystem::path> files;
 public:
-	Linker(const Build& ctx) : ctx {&ctx}
+	Linker(const BuildContext& ctx) : ctx {&ctx}
 	{}
 
 	void add_object(const std::filesystem::path& unit);
@@ -149,7 +156,7 @@ static auto expand_linear_paths(
 	return files;
 }
 
-auto static compile_unit(const Build& ctx,
+auto static compile_unit(const BuildContext& ctx,
 	const Unit& unit,
 	const CompileOptions& opts) -> std::optional<std::filesystem::path>
 {
@@ -241,7 +248,7 @@ struct CompileResult
 	std::vector<std::filesystem::path> binaries;
 };
 
-static auto compile(const Build& ctx, const CompileOptions& opts) -> CompileResult
+static auto compile(const BuildContext& ctx, const CompileOptions& opts) -> CompileResult
 {
 	CompileResult compilation;
 
@@ -277,7 +284,7 @@ static auto build_package(const Workspace& ws,
 
 	auto startTime = steady_clock::now();
 
-	Build bctx {.gctx = &ws.gctx(), .workspace = &ws, .roots = {}};
+	BuildContext bctx {.gctx = &ws.gctx(), .workspace = &ws, .roots = {}};
 
 	Profile profile = Profile::dev();
 

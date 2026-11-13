@@ -279,7 +279,7 @@ public:
 	[[nodiscard]]
 	auto build_dir() const -> std::filesystem::path
 	{
-		return objectDir.value_or(target_dir());
+		return buildDir.value_or(target_dir());
 	}
 
 	[[nodiscard]]
@@ -298,7 +298,7 @@ private:
 	std::filesystem::path currentManifest_;
 	std::optional<std::filesystem::path> rootManifest = {};
 	std::optional<std::filesystem::path> targetDir = {};
-	std::optional<std::filesystem::path> objectDir = {};
+	std::optional<std::filesystem::path> buildDir = {};
 	Packages packages;
 
 	explicit Workspace(const std::filesystem::path& currentManifest, GlobalContext& gctx);

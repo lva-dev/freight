@@ -26,8 +26,8 @@ static auto is_real_cpp_file(const std::filesystem::path file) -> bool
 template<class T>
 using CollectResult = std::expected<std::vector<T>, std::filesystem::directory_entry>;
 
-static auto collect_target_sources(
-	const std::filesystem::path& dir) -> CollectResult<std::filesystem::path>
+static auto collect_target_sources(const std::filesystem::path& dir)
+	-> CollectResult<std::filesystem::path>
 {
 	using namespace std::filesystem;
 
@@ -47,7 +47,8 @@ static auto collect_target_sources(
 	return paths;
 }
 
-static auto infer_binary_targets(const std::filesystem::path& dir) -> CollectResult<Target>
+static auto infer_binary_targets(const std::filesystem::path& dir)
+	-> CollectResult<Target>
 {
 	using namespace std::filesystem;
 
@@ -75,8 +76,8 @@ static auto infer_binary_targets(const std::filesystem::path& dir) -> CollectRes
 	return targets;
 }
 
-static auto infer_targets(GlobalContext& gctx,
-	const std::string& packageName) -> CollectResult<Target>
+static auto infer_targets(GlobalContext& gctx, const std::string& packageName)
+	-> CollectResult<Target>
 {
 	using namespace std::filesystem;
 
@@ -136,15 +137,16 @@ public:
 		return manifestPath;
 	}
 
-	[[noreturn]] void fail(std::string_view message) const
+	[[noreturn]]
+	void fail(std::string_view message) const
 	{
 		error::bail(
 			"failed to parse manifest at `{}`\n\n{}", manifestPath.native(), message);
 	}
 };
 
-static auto infer_target_path(ManifestReaderState& mrs,
-	const std::string targetName) -> std::filesystem::path
+static auto infer_target_path(ManifestReaderState& mrs, const std::string targetName)
+	-> std::filesystem::path
 {
 	using namespace std::filesystem;
 
@@ -191,7 +193,8 @@ static auto parse_standard(std::string_view standard) -> std::optional<Standard>
 	}
 }
 
-static auto read_manifest(GlobalContext& gctx, const std::filesystem::path& path) -> Manifest
+static auto read_manifest(GlobalContext& gctx, const std::filesystem::path& path)
+	-> Manifest
 {
 	TomlManifest tomlManifest = serialize_toml(path);
 
@@ -280,8 +283,8 @@ static auto read_manifest(GlobalContext& gctx, const std::filesystem::path& path
 		std::move(tomlManifest), std::move(packageName), std::move(targets), standard);
 }
 
-static auto find_root_manifest(
-	const std::filesystem::path& currentManifest) -> std::optional<std::filesystem::path>
+static auto find_root_manifest(const std::filesystem::path& currentManifest)
+	-> std::optional<std::filesystem::path>
 {
 	std::filesystem::path dir;
 	for (auto& component : currentManifest.parent_path())
@@ -301,17 +304,17 @@ freight::Workspace::Workspace(const std::filesystem::path& currentManifest,
 	GlobalContext& gctx)
 	: gctx_ {&gctx}
 {
-    
-    if (!std::filesystem::exists(currentManifest))
+
+	if (!std::filesystem::exists(currentManifest))
 	{
-        rootManifest = find_root_manifest(currentManifest);
+		rootManifest = find_root_manifest(currentManifest);
 		if (!rootManifest)
 		{
 			error::bail("could not find `Freight.toml` in `{}` or any parent directory",
 				gctx.cwd().native());
 		}
 
-        currentManifest_ = *rootManifest;
+		currentManifest_ = *rootManifest;
 	}
 	else
 	{
@@ -323,7 +326,8 @@ freight::Workspace::Workspace(const std::filesystem::path& currentManifest,
 	packages.emplace(currentManifest, std::move(inferredPackage));
 }
 
-static auto search_path(const std::filesystem::path& file) -> std::optional<std::filesystem::path>
+static auto search_path(const std::filesystem::path& file)
+	-> std::optional<std::filesystem::path>
 {
 	using namespace std::filesystem;
 
@@ -360,13 +364,13 @@ auto freight::GlobalContext::compiler_path() const -> const std::filesystem::pat
 
 	if (cachedPath.empty())
 	{
-        auto path = search_path("clang++");
-        if (!path.has_value())
-        {
-            // TODO: Error is clang++ isn't installed
-            assert(false && "Failed to find clang++");
-        }
-        
+		auto path = search_path("clang++");
+		if (!path.has_value())
+		{
+			// TODO: Error is clang++ isn't installed
+			assert(false && "Failed to find clang++");
+		}
+
 		cachedPath = *std::move(path);
 	}
 

@@ -16,7 +16,8 @@ void print_error(std::format_string<Args...> fmt, Args&&...args)
 }
 
 template<class... Args>
-[[noreturn]] void bail(std::format_string<Args...> fmt, Args&&...args)
+[[noreturn]]
+void bail(std::format_string<Args...> fmt, Args&&...args)
 {
 	print_error(fmt, std::forward<Args>(args)...);
 	exit(1);

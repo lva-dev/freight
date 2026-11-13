@@ -5,7 +5,8 @@
 
 #include "Workspace.hpp"
 
-namespace freight::ops {
+namespace freight::ops
+{
 struct InitOptions
 {
 	std::optional<std::string> path;
@@ -22,7 +23,7 @@ void new_(GlobalContext& gctx, const NewOptions& opts);
 
 struct BuildOptions
 {
-    bool release = false;
+	bool release = false;
 };
 
 void build(GlobalContext& gctx, const BuildOptions& opts);
