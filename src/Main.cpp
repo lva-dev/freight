@@ -29,33 +29,33 @@ static auto missing_required_subcommand(std::string_view cmd) -> std::string
 
 auto main(int argc, char **argv) -> int
 {
-	std::span<char *> argsSpan {argv, static_cast<std::size_t>(argc)};
-	auto rawArgs = clap::lexer::RawArgs::create(argsSpan.subspan(1));
-	auto argCursor = rawArgs.cursor();
+	std::span<char *> args_span {argv, static_cast<std::size_t>(argc)};
+	auto raw_args = clap::lexer::RawArgs::create(args_span.subspan(1));
+	auto arg_cursor = raw_args.cursor();
 
-	auto maybeName = rawArgs.next(argCursor);
-	if (!maybeName.has_value())
+	auto maybe_name = raw_args.next(arg_cursor);
+	if (!maybe_name.has_value())
 	{
 		error::bail("{}", missing_required_subcommand("freight"));
 	}
 
 	auto gctx = GlobalContext::create(std::filesystem::current_path());
 
-	auto name = std::move(maybeName)->to_value();
+	auto name = std::move(maybe_name)->to_value();
 	if (name == "build" || name == "b")
 	{
 		ops::build(gctx, ops::BuildOptions {});
 	}
 	else if (name == "new")
 	{
-		auto maybePath = rawArgs.next(argCursor);
-		if (!maybePath.has_value())
+		auto maybe_path = raw_args.next(arg_cursor);
+		if (!maybe_path.has_value())
 		{
 			error::bail("{}", missing_required_arg("<PATH>"));
 		}
 
 		ops::NewOptions opts {
-			.path {std::move(maybePath)->to_value()},
+			.path {std::move(maybe_path)->to_value()},
 		};
 
 		ops::new_(gctx, opts);

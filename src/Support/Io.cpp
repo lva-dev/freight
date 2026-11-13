@@ -1,9 +1,9 @@
 #include "../Pch.hpp"
 
-#include "Support/Io.hpp"
-
 #include <expected>
 #include <utility>
+
+#include "Support/Io.hpp"
 
 namespace support::io
 {
@@ -28,10 +28,8 @@ auto AnonymousFile::create() -> std::expected<AnonymousFile, std::error_code>
 		return std::unexpected<std::error_code>(
 			std::in_place, errno, std::system_category());
 	}
-	else
-	{
-		return AnonymousFile {fd};
-	}
+
+	return AnonymousFile {fd};
 
 	return AnonymousFile {fd};
 }

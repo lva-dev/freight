@@ -1,48 +1,49 @@
 #pragma once
 
 #include <boost/optional.hpp>
+
 #include <optional>
 
 namespace support::optional
 {
-	template<class T> boost::optional<T&> as_ref(std::optional<T>& opt)
+template<class T>
+auto as_ref(std::optional<T>& opt) -> boost::optional<T&>
+{
+	if (opt.has_value())
 	{
-		if (opt.has_value())
-		{
-			return *opt;
-		}
-		else
-		{
-			return {};
-		}
+		return *opt;
 	}
 
-	template<class T> boost::optional<const T&> as_ref(const std::optional<T>& opt)
+	return {};
+}
+
+template<class T>
+auto as_ref(const std::optional<T>& opt) -> boost::optional<const T&>
+{
+	if (opt.has_value())
 	{
-		if (opt.has_value())
-		{
-			return *opt;
-		}
-		else
-		{
-			return {};
-		}
+		return *opt;
 	}
 
-	template<class T> boost::optional<T&> as_ref(std::optional<T>&& opt) = delete;
+	return {};
+}
 
-	template<class T> boost::optional<T&> as_ref(const std::optional<T>&& opt) = delete;
+template<class T>
+auto as_ref(std::optional<T>&& opt) -> boost::optional<T&> = delete;
 
-	template<class T, class F>
-	constexpr auto transform_std(const boost::optional<T>& opt, F&& f)
+template<class T>
+auto as_ref(const std::optional<T>&& opt) -> boost::optional<T&> = delete;
+
+template<class T, class F>
+constexpr auto transform_std(const boost::optional<T>& opt, F&& f) -> boost::optional<T>&
+{
+	using Result = std::optional<std::invoke_result_t<F, T>>;
+
+	if (opt.has_value())
 	{
-		using Result = std::optional<std::invoke_result_t<F, T>>;
-
-		if (opt)
-		{
-			return Result {std::invoke(std::forward<F>(f), *opt)};
-		}
-
-		return Result {std::nullopt};
+		return Result {std::invoke(std::forward<F>(f), *opt)};
 	}
-} // namespace optional
+
+	return Result {std::nullopt};
+}
+} // namespace support::optional

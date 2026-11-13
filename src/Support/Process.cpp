@@ -15,26 +15,27 @@
 
 using namespace support::process;
 
+// NOLINTNEXTLINE(readability-identifier-naming)
 namespace implementation::unix_
 {
 static auto execvp(const std::filesystem::path& path,
 	std::span<const std::string> args) -> Expected<void>
 {
-	std::vector<gsl::zstring> execArgs;
+	std::vector<gsl::zstring> exec_args;
 
 	auto zstring_from = [](auto& str) -> auto {
 		auto size = str.size();
-		auto ptr = gsl::zstring {new char[size + 1]};
+		auto *ptr = gsl::zstring {new char[size + 1]};
 		std::strcpy(ptr, str.data());
 		return ptr;
 	};
 
-	std::ranges::transform(args, std::back_inserter(execArgs), zstring_from);
-	execArgs.emplace_back(nullptr);
+	std::ranges::transform(args, std::back_inserter(exec_args), zstring_from);
+	exec_args.emplace_back(nullptr);
 
-	::execvp(path.c_str(), execArgs.data());
+	::execvp(path.c_str(), exec_args.data());
 
-	for (auto zstr : execArgs)
+	for (auto *zstr : exec_args)
 	{
 		// NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
 		delete[] zstr;
@@ -49,8 +50,8 @@ namespace support::process
 auto ChildHandle::wait() const -> Expected<ChildStatus>
 {
 	int status = 0;
-	int waitResult = waitpid(static_cast<pid_t>(pid_), &status, 0);
-    if (waitResult == -1)
+	int wait_result = waitpid(static_cast<pid_t>(pid_), &status, 0);
+    if (wait_result == -1)
     {
         return std::unexpected<std::error_code>(
 			std::in_place, errno, std::system_category());
@@ -70,10 +71,10 @@ auto ProcessBuilder::spawn() const -> Expected<ChildHandle>
 
 	if (pid == 0)
 	{
-		auto execResult = implementation::unix_::execvp(path_, args_);
-		if (!execResult.has_value())
+		auto exec_result = implementation::unix_::execvp(path_, args_);
+		if (!exec_result.has_value())
 		{
-			return std::unexpected {std::move(execResult).error()};
+			return std::unexpected {std::move(exec_result).error()};
 		}
 	}
 
@@ -82,20 +83,17 @@ auto ProcessBuilder::spawn() const -> Expected<ChildHandle>
 
 auto ProcessBuilder::status() const -> Expected<ChildStatus>
 {
-    if (auto spawnResult = spawn(); spawnResult.has_value())
+    auto spawn_result = spawn();
+    if (spawn_result.has_value())
     {
-        if (auto waitResult = spawnResult->wait(); waitResult.has_value())
+        if (auto wait_result = spawn_result->wait(); wait_result.has_value())
         {
-            return waitResult;
+            return wait_result;
         }
-        else
-        {
-            return std::unexpected{std::move(spawnResult).error()};
-        }
+        
+        return std::unexpected{std::move(spawn_result).error()};
     }
-    else
-    {
-        return std::unexpected{std::move(spawnResult).error()};
-    }
+
+    return std::unexpected{std::move(spawn_result).error()};
 }
 } // namespace support::process

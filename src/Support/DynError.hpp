@@ -84,12 +84,12 @@ private:
 template<>
 struct std::formatter<support::error::DynError>
 {
-	constexpr auto parse(std::format_parse_context& ctx)
+	constexpr static auto parse(std::format_parse_context& ctx)
 	{
 		return ctx.begin();
 	}
 
-	auto format(const support::error::DynError& obj, std::format_context& ctx) const
+	static auto format(const support::error::DynError& obj, std::format_context& ctx) 
 	{
 		return std::format_to(ctx.out(), "{}", obj.to_string());
 	}

@@ -26,7 +26,7 @@ private:
 
 	int exitCode;
 
-	ChildStatus(int exitCode) : exitCode {exitCode}
+	ChildStatus(int exit_code) : exitCode {exit_code}
 	{
 	}
 };

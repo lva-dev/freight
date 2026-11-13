@@ -17,7 +17,7 @@ auto write_file(const std::filesystem::path& file, std::string_view content) -> 
 struct AnonymousFile
 {
 private:
-	inline static constexpr const int NO_FD = -1;
+	static constexpr const int NO_FD = -1;
 	int fd = NO_FD;
 
 	AnonymousFile(int fd) : fd {fd}

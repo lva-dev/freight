@@ -14,9 +14,10 @@ void print_parse_error(const toml::parse_error& error)
 	std::println(std::cerr, " --> {}:{}:{}", *src.path, src.end.line, src.end.column);
 }
 
-auto serialize_toml([[maybe_unused]] const std::filesystem::path& manifestPath) -> TomlManifest
+auto serialize_toml([[maybe_unused]] const std::filesystem::path& manifest_path)
+	-> TomlManifest
 {
-	toml::parse_result result = toml::parse_file(manifestPath.string());
+	toml::parse_result result = toml::parse_file(manifest_path.string());
 	if (!result)
 	{
 		// TODO: Return error
@@ -34,10 +35,10 @@ auto serialize_toml([[maybe_unused]] const std::filesystem::path& manifestPath) 
 		{
 			manifest.package->name = package["name"].as_string()->get();
 		}
-        else
-        {
-            // TODO: Return error
-        }
+		else
+		{
+			// TODO: Return error
+		}
 
 		if (package["version"].is_string())
 		{

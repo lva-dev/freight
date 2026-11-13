@@ -91,7 +91,7 @@ public:
 			.toml_ = std::move(toml),
 			.name_ = std::move(name),
 			.targets_ = std::move(targets),
-			.standard_ = standard
+			.standard_ = standard,
 		}};
 	}
 
@@ -108,7 +108,7 @@ public:
 	}
 
 	[[nodiscard]]
-	auto toml() -> const TomlManifest&
+	auto toml() const -> const TomlManifest&
 	{
 		return inner.toml_;
 	}
@@ -136,10 +136,10 @@ class Package
 {
 public:
 	[[nodiscard]]
-	static auto create(Manifest&& manifest, std::filesystem::path&& manifestPath)
+	static auto create(Manifest&& manifest, std::filesystem::path&& manifest_path)
 		-> Package
 	{
-		return Package {std::move(manifest), std::move(manifestPath)};
+		return Package {std::move(manifest), std::move(manifest_path)};
 	}
 
 	[[nodiscard]]
@@ -181,9 +181,9 @@ private:
 	Manifest manifest_;
 	std::filesystem::path manifestPath;
 
-	explicit Package(Manifest&& manifest, std::filesystem::path manifestPath)
+	explicit Package(Manifest&& manifest, std::filesystem::path manifest_path)
 		: manifest_(std::move(manifest))
-		, manifestPath {std::move(manifestPath)}
+		, manifestPath {std::move(manifest_path)}
 	{}
 };
 
@@ -216,13 +216,13 @@ class Packages
 {
 public:
 	[[nodiscard]]
-	auto operator[](const std::filesystem::path& path) const -> const Package&
+	auto get(const std::filesystem::path& path) const -> const Package&
 	{
 		return packages_.at(path);
 	}
 
 	[[nodiscard]]
-	auto operator[](const std::filesystem::path& path) -> Package&
+	auto get(const std::filesystem::path& path) -> Package&
 	{
 		return packages_.at(path);
 	}
@@ -234,7 +234,7 @@ public:
 	}
 
 	[[nodiscard]]
-	auto view() const -> const support::ranges::concepts::ViewOf<Package> auto
+	auto view() const -> support::ranges::concepts::ViewOf<Package> auto
 	{
 		return std::views::values(packages_);
 	}
@@ -267,23 +267,23 @@ public:
 	[[nodiscard]]
 	auto root_manifest() const -> std::filesystem::path
 	{
-		return rootManifest.value_or(currentManifest_);
+		return root_manifest_.value_or(current_manifest_);
 	}
 
 	[[nodiscard]]
 	auto target_dir() const -> std::filesystem::path
 	{
-		return targetDir.value_or(root() / "target");
+		return target_dir_.value_or(root() / "target");
 	}
 
 	[[nodiscard]]
 	auto build_dir() const -> std::filesystem::path
 	{
-		return buildDir.value_or(target_dir());
+		return build_dir_.value_or(target_dir());
 	}
 
 	[[nodiscard]]
-	auto members() const -> const support::ranges::concepts::ViewOf<Package> auto
+	auto members() const -> support::ranges::concepts::ViewOf<Package> auto
 	{
 		return packages.view();
 	}
@@ -291,16 +291,17 @@ public:
 	[[nodiscard]]
 	auto current() const -> const Package&
 	{
-		return packages[currentManifest_];
+		return packages.get(current_manifest_);
 	}
 private:
 	GlobalContext *gctx_;
-	std::filesystem::path currentManifest_;
-	std::optional<std::filesystem::path> rootManifest = {};
-	std::optional<std::filesystem::path> targetDir = {};
-	std::optional<std::filesystem::path> buildDir = {};
+	std::filesystem::path current_manifest_;
+	std::optional<std::filesystem::path> root_manifest_;
+	std::optional<std::filesystem::path> target_dir_;
+	std::optional<std::filesystem::path> build_dir_;
 	Packages packages;
 
-	explicit Workspace(const std::filesystem::path& currentManifest, GlobalContext& gctx);
+	explicit Workspace(const std::filesystem::path& current_manifest,
+		GlobalContext& gctx);
 };
 } // namespace freight

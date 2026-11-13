@@ -44,7 +44,10 @@
 	#error "Unsupported platform"
 #endif
 
-#define TOML_EXCEPTIONS 0
-#include <tomlplusplus/tomlplusplus.h>
+#include <boost/optional.hpp>
 
 #include <clap/Clap.hpp>
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define TOML_EXCEPTIONS 0
+#include <tomlplusplus/tomlplusplus.h>

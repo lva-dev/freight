@@ -17,8 +17,8 @@ using namespace freight;
 
 struct CompileOptions
 {
-	DebugInfo debugLevel;
-	OptLevel optLevel;
+	DebugInfo debug_level;
+	OptLevel opt_level;
 	Standard standard;
 };
 
@@ -53,7 +53,7 @@ public:
 	{}
 
 	void add_object(const std::filesystem::path& unit);
-	auto link(const std::filesystem::path exe) -> bool;
+	auto link(const std::filesystem::path& exe) -> bool;
 };
 
 void Linker::add_object(const std::filesystem::path& unit)
@@ -70,7 +70,7 @@ static auto could_not_execute_process(std::string_view process,
 		error::cause("{} (os error {})", err.message(), err.value()));
 }
 
-auto Linker::link(const std::filesystem::path exe) -> bool
+auto Linker::link(const std::filesystem::path& exe) -> bool
 {
 	using namespace std::filesystem;
 
@@ -81,14 +81,14 @@ auto Linker::link(const std::filesystem::path exe) -> bool
 	process.arg("-o");
 	process.arg(exe);
 
-	auto linkResult = process.status();
-	if (!linkResult.has_value())
+	auto link_result = process.status();
+	if (!link_result.has_value())
 	{
 		error::bail("{}",
-			could_not_execute_process(process.get_path().native(), linkResult.error()));
+			could_not_execute_process(process.get_path().native(), link_result.error()));
 	}
 
-	if (linkResult->exit_code() != 0)
+	if (link_result->exit_code() != 0)
 	{
 		return false;
 	}
@@ -102,11 +102,13 @@ static auto optlevel_to_char(OptLevel level) -> char
 	{
 		return static_cast<char>('0' + static_cast<int>(level));
 	}
-	else if (level == OptLevel::LevelS)
+	
+    if (level == OptLevel::LevelS)
 	{
 		return 's';
 	}
-	else if (level == OptLevel::LevelZ)
+	
+    if (level == OptLevel::LevelZ)
 	{
 		return 'z';
 	}
@@ -134,7 +136,7 @@ static auto expand_linear_paths(
 	using namespace std::filesystem;
 
 	std::vector<std::filesystem::path> files;
-	for (auto& path : paths)
+	for (const auto& path : paths)
 	{
 		if (is_regular_file(path))
 		{
@@ -142,7 +144,7 @@ static auto expand_linear_paths(
 		}
 		else if (is_directory(path))
 		{
-			for (auto& file : recursive_directory_iterator {path})
+			for (const auto& file : recursive_directory_iterator {path})
 			{
 				files.push_back(file);
 			}
@@ -162,77 +164,77 @@ auto static compile_unit(const BuildContext& ctx,
 {
 	using namespace std::filesystem;
 
-	support::process::ProcessBuilder compilerBase {ctx.gctx->compiler_path()};
+	support::process::ProcessBuilder compiler_base {ctx.gctx->compiler_path()};
 
-	compilerBase.arg("-c");
+	compiler_base.arg("-c");
 
-	if (opts.debugLevel != DebugInfo::Level0)
+	if (opts.debug_level != DebugInfo::Level0)
 	{
-		compilerBase.arg(std::format("-g{}", debuglevel_to_int(opts.debugLevel)));
+		compiler_base.arg(std::format("-g{}", debuglevel_to_int(opts.debug_level)));
 	}
 
-	if (opts.optLevel != OptLevel::Level0)
+	if (opts.opt_level != OptLevel::Level0)
 	{
-		compilerBase.arg(std::format("-O{}", optlevel_to_char(opts.optLevel)));
+		compiler_base.arg(std::format("-O{}", optlevel_to_char(opts.opt_level)));
 	}
 
-	compilerBase.arg(std::format("-std={}", standard_to_str(opts.standard)));
+	compiler_base.arg(std::format("-std={}", standard_to_str(opts.standard)));
 
-	std::vector<support::io::AnonymousFile> objectFiles;
+	std::vector<support::io::AnonymousFile> object_files;
 
-	bool hadError = false;
-	for (auto& sourceFile : expand_linear_paths(unit.target->paths))
+	bool had_error = false;
+	for (auto& source_file : expand_linear_paths(unit.target->paths))
 	{
-		support::process::ProcessBuilder compiler {compilerBase};
+		support::process::ProcessBuilder compiler {compiler_base};
 
-		compiler.arg(sourceFile);
+		compiler.arg(source_file);
 
-		auto objectFile = support::io::AnonymousFile::create();
-		if (!objectFile.has_value())
+		auto object_file = support::io::AnonymousFile::create();
+		if (!object_file.has_value())
 		{
 			error::bail("failed to build package");
 		}
 
 		compiler.arg("-o");
-		compiler.arg(objectFile->path());
+		compiler.arg(object_file->path());
 
-		auto compilerResult = compiler.status();
-		if (!compilerResult.has_value())
+		auto compiler_result = compiler.status();
+		if (!compiler_result.has_value())
 		{
 			error::bail("{}",
 				could_not_execute_process(
-					compiler.get_path().native(), compilerResult.error()));
+					compiler.get_path().native(), compiler_result.error()));
 		}
 
-		if (compilerResult->exit_code() != 0)
+		if (compiler_result->exit_code() != 0)
 		{
-			hadError = true;
+			had_error = true;
 		}
 		else
 		{
-			objectFiles.emplace_back(std::move(*objectFile));
+			object_files.emplace_back(std::move(*object_file));
 		}
 	}
 
-	if (hadError)
+	if (had_error)
 	{
-		std::string binDescription =
+		std::string bin_description =
 			ctx.roots.size() == 1 ? std::format("(bin \"{}\")", unit.target->name) : "";
 		error::print_error("could not compile `{}` {} due to error(s)",
 			unit.package->name(),
-			binDescription);
+			bin_description);
 		return {};
 	}
 
 	Linker linker {ctx};
-	for (const auto& file : objectFiles)
+	for (const auto& file : object_files)
 	{
 		linker.add_object(file.path());
 	}
 
-	auto binaryPath =
+	auto binary_path =
 		ctx.workspace->build_dir() / unit.profile->target_subdir / unit.target->name;
-	if (!linker.link(binaryPath))
+	if (!linker.link(binary_path))
 	{
 		error::print_error("could not compile `{}` (bin \"{}\") due to linker error(s)",
 			unit.package->name(),
@@ -240,7 +242,7 @@ auto static compile_unit(const BuildContext& ctx,
 		return {};
 	}
 
-	return binaryPath;
+	return binary_path;
 }
 
 struct CompileResult
@@ -252,7 +254,7 @@ static auto compile(const BuildContext& ctx, const CompileOptions& opts) -> Comp
 {
 	CompileResult compilation;
 
-	for (auto& unit : ctx.roots)
+	for (const auto& unit : ctx.roots)
 	{
 		auto result = compile_unit(ctx, unit, opts);
 		if (result)
@@ -265,33 +267,33 @@ static auto compile(const BuildContext& ctx, const CompileOptions& opts) -> Comp
 }
 
 template<class R, class P>
-static auto to_milliseconds(std::chrono::duration<R, P> d) -> float
+static auto to_milliseconds(std::chrono::duration<R, P> duration) -> float
 {
 	using std::chrono::duration_cast;
 	using std::chrono::milliseconds;
 	constexpr static const double MILLISECONDS_PER_SECOND = 1000;
-	return static_cast<double>(duration_cast<milliseconds>(d).count()) /
+	return static_cast<double>(duration_cast<milliseconds>(duration).count()) /
 		   MILLISECONDS_PER_SECOND;
 }
 
-static auto build_package(const Workspace& ws,
+static auto build_package(const Workspace& workspace,
 	const Package& package,
-	std::vector<std::string> targetsToBuild = {}) -> CompileResult
+	std::vector<std::string> targets_to_build = {}) -> CompileResult
 {
 	using std::chrono::steady_clock;
 
 	error::print_status("Compiling", "{} ({})", package.name(), package.root().native());
 
-	auto startTime = steady_clock::now();
+	auto start_time = steady_clock::now();
 
-	BuildContext bctx {.gctx = &ws.gctx(), .workspace = &ws, .roots = {}};
+	BuildContext bctx {.gctx = &workspace.gctx(), .workspace = &workspace, .roots = {}};
 
 	Profile profile = Profile::dev();
 
-	for (auto& target : package.targets())
+	for (const auto& target : package.targets())
 	{
-		if (!targetsToBuild.empty() &&
-			!std::ranges::contains(targetsToBuild, target.name))
+		if (!targets_to_build.empty() &&
+			!std::ranges::contains(targets_to_build, target.name))
 		{
 			continue;
 		}
@@ -304,20 +306,20 @@ static auto build_package(const Workspace& ws,
 	}
 
 	CompileOptions opts = {
-		.debugLevel = profile.debug,
-		.optLevel = profile.optLevel,
+		.debug_level = profile.debug,
+		.opt_level = profile.optLevel,
 		.standard = package.standard(),
 	};
 
 	CompileResult result = compile(bctx, opts);
 
-	auto endTime = steady_clock::now();
-	auto timePassed = endTime - startTime;
+	auto end_time = steady_clock::now();
+	auto time_passed = end_time - start_time;
 
 	std::string description =
-		opts.optLevel == OptLevel::Level0 ? "unoptimized" : "optimized";
+		opts.opt_level == OptLevel::Level0 ? "unoptimized" : "optimized";
 
-	if (opts.debugLevel != DebugInfo::Level0)
+	if (opts.debug_level != DebugInfo::Level0)
 	{
 		description += " + debuginfo";
 	}
@@ -326,7 +328,7 @@ static auto build_package(const Workspace& ws,
 		"`{}` profile [{}] target(s) in {:.3}s",
 		profile.name,
 		description,
-		to_milliseconds(timePassed));
+		to_milliseconds(time_passed));
 
 	return result;
 }
@@ -342,28 +344,28 @@ static auto build_package(const Workspace& ws,
 //     return binary;
 // }
 
-void ops::build(GlobalContext& gctx, const ops::BuildOptions&)
+void ops::build(GlobalContext& gctx, [[maybe_unused]] const ops::BuildOptions& opts)
 {
 	using namespace std::filesystem;
 
-	auto ws = Workspace::open(gctx.cwd() / "Freight.toml", gctx);
-	build_package(ws, ws.current());
+	auto workspace = Workspace::open(gctx.cwd() / "Freight.toml", gctx);
+	build_package(workspace, workspace.current());
 }
 
 void ops::run(GlobalContext& gctx,
-	const ops::RunOptions&,
+	[[maybe_unused]] const ops::RunOptions& opts,
 	[[maybe_unused]] std::span<std::string> args)
 {
 	using namespace std::filesystem;
 
-	auto ws = Workspace::open(gctx.cwd() / "Freight.toml", gctx);
+	auto workspace = Workspace::open(gctx.cwd() / "Freight.toml", gctx);
 
-	assert(!ws.current().targets().empty());
+	assert(!workspace.current().targets().empty());
 
 	CompileResult result;
-	if (ws.current().targets().size() == 1)
+	if (workspace.current().targets().size() == 1)
 	{
-		result = build_package(ws, ws.current());
+		result = build_package(workspace, workspace.current());
 	}
 	else
 	{
@@ -373,15 +375,15 @@ void ops::run(GlobalContext& gctx,
 		assert(false);
 	}
 
-	auto exePath = result.binaries.front();
-	auto exePathRelative = relative(result.binaries.front(), gctx.cwd());
-	error::print_status("  Running", "`{}`", exePathRelative.native());
+	auto exe_path = result.binaries.front();
+	auto exe_path_relative = relative(result.binaries.front(), gctx.cwd());
+	error::print_status("  Running", "`{}`", exe_path_relative.native());
 
-	support::process::ProcessBuilder pb {exePath};
-	auto runResult = pb.status();
-	if (!runResult.has_value())
+	support::process::ProcessBuilder process {exe_path};
+	auto run_result = process.status();
+	if (!run_result.has_value())
 	{
 	}
 
-	exit(runResult->exit_code());
+	exit(run_result->exit_code());
 }

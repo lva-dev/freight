@@ -307,18 +307,18 @@ freight::Workspace::Workspace(const std::filesystem::path& currentManifest,
 
 	if (!std::filesystem::exists(currentManifest))
 	{
-		rootManifest = find_root_manifest(currentManifest);
-		if (!rootManifest)
+		root_manifest_ = find_root_manifest(currentManifest);
+		if (!root_manifest_)
 		{
 			error::bail("could not find `Freight.toml` in `{}` or any parent directory",
 				gctx.cwd().native());
 		}
 
-		currentManifest_ = *rootManifest;
+		current_manifest_ = *root_manifest_;
 	}
 	else
 	{
-		currentManifest_ = currentManifest;
+		current_manifest_ = currentManifest;
 	}
 
 	auto inferredPackage = Package::create(

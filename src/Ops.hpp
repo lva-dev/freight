@@ -16,9 +16,10 @@ void init(GlobalContext& gctx, const InitOptions& opts);
 
 struct NewOptions
 {
-	std::string path = {};
+	std::string path;
 };
 
+// NOLINTNEXTLINE(readability-identifier-naming)
 void new_(GlobalContext& gctx, const NewOptions& opts);
 
 struct BuildOptions
@@ -30,7 +31,7 @@ void build(GlobalContext& gctx, const BuildOptions& opts);
 
 struct RunOptions
 {
-	BuildOptions build_opts = {};
+	BuildOptions build_opts;
 };
 
 void run(GlobalContext& gctx, const RunOptions& opts, std::span<std::string> args = {});
