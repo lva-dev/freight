@@ -7,7 +7,7 @@
 
 using namespace freight;
 
-void print_parse_error(const toml::parse_error& error)
+static void print_parse_error(const toml::parse_error& error)
 {
 	error::print_error("{}", error.description());
 	auto src = error.source();
