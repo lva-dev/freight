@@ -2,7 +2,7 @@
 
 #include <utility>
 
-namespace support::util
+namespace support::functional
 {
 template<class F>
 class WithResultOf
@@ -27,4 +27,13 @@ public:
 private:
 	F&& f;
 };
-} // namespace support::util
+} // namespace support::functional
+
+namespace support::functional::concepts
+{
+template<class F, class R>
+concept Supplier = std::is_invocable_r_v<R, F>;
+
+template<class F, class R, class T>
+concept Function = std::is_invocable_r_v<R, F, T>;
+} // namespace clap::functional::concepts
