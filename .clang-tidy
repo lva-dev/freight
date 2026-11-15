@@ -8,6 +8,7 @@ InheritParentConfig: false
 CheckOptions:
   modernize-use-override.IgnoreDestructors: false
   modernize-use-trailing-return-type.TransformFunctions: true
+  modernize-use-trailing-return-type.TransformLambdas: none
   readability-trailing-comma.SingleLineCommaPolicy: 'Ignore'
   readability-uppercase-literal-suffix.NewSuffixes: 'L;LL;LU;LLU'
   readability-identifier-length.MinimumVariableNameLength: 1
