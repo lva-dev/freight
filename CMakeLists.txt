@@ -6,7 +6,7 @@ project(
     LANGUAGES CXX
 )
 
-if (NOT CMAKE_BUILD_TYPE)
+if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
@@ -40,20 +40,20 @@ add_executable("${TARGET}"
 
 target_include_directories("${TARGET}" PRIVATE "${SOURCE_DIRECTORY}")
 
-if (CMAKE_BUILD_TYPE EQUAL "Debug")
+if(CMAKE_BUILD_TYPE EQUAL "Debug")
     target_compile_options("${TARGET}" -g)
-elseif (CMAKE_BUILD_TYPE EQUAL "Release")
+elseif(CMAKE_BUILD_TYPE EQUAL "Release")
     target_compile_definitions("${TARGET}" -NDEBUG)
     target_compile_options("${TARGET}" -O3)
-elseif (CMAKE_BUILD_TYPE EQUAL "RelWithDebInfo")
+elseif(CMAKE_BUILD_TYPE EQUAL "RelWithDebInfo")
     target_compile_definitions("${TARGET}" -NDEBUG)
     target_compile_options("${TARGET}" -g -O3)
-elseif (CMAKE_BUILD_TYPE EQUAL "MinSizeRel")
+elseif(CMAKE_BUILD_TYPE EQUAL "MinSizeRel")
     target_compile_definitions("${TARGET}" -NDEBUG)
     target_compile_options("${TARGET}" -Oz)
 endif()
 
-target_include_directories("${TARGET}" PRIVATE "${VENDOR_DIRECTORY}/marzer/include/")
+target_include_directories("${TARGET}" PRIVATE "${VENDOR_DIRECTORY}/tomlplusplus/include/")
 
 target_link_libraries("${TARGET}" PRIVATE Microsoft.GSL::GSL)
 

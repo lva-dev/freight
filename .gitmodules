@@ -2,6 +2,9 @@
 	path = vendor/cwalk
 	url = https://github.com/likle/cwalk.git
 	branch = stable
-[submodule "vendor/Clap"]
-	path = vendor/Clap
+[submodule "vendor/semver"]
+	path = vendor/semver
+	url = https://github.com/Neargye/semver
+[submodule "vendor/clap"]
+	path = vendor/clap
 	url = https://github.com/lva-dev/clap-cpp
