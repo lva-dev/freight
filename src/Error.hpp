@@ -23,6 +23,13 @@ void bail(std::format_string<Args...> fmt, Args&&...args)
 	exit(1);
 }
 
+[[noreturn]]
+inline void bail(std::string_view str)
+{
+	print_error("{}", str);
+	exit(1);
+}
+
 template<class... Args>
 auto cause(std::format_string<Args...> fmt, Args&&...args) -> std::string
 {
