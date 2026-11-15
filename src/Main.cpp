@@ -354,7 +354,7 @@ auto print_help_and_exit()
 		"    build, b    Compile the current package\n"
 		"    new         Create a new freight package\n"
 		"    init        Create a new freight package in an existing directory\n"
-		"    run, r      Run a binary or example of the local package\n");
+		"    run, r      Run a binary of the local package\n");
 	std::exit(0);
 }
 
