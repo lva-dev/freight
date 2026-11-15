@@ -84,7 +84,7 @@ auto Linker::link(const std::filesystem::path& exe) -> bool
 	auto link_result = process.status();
 	if (!link_result.has_value())
 	{
-		error::bail("{}",
+		error::bail(
 			could_not_execute_process(process.get_path().native(), link_result.error()));
 	}
 
@@ -201,7 +201,7 @@ auto static compile_unit(const BuildContext& ctx,
 		auto compiler_result = compiler.status();
 		if (!compiler_result.has_value())
 		{
-			error::bail("{}",
+			error::bail(
 				could_not_execute_process(
 					compiler.get_path().native(), compiler_result.error()));
 		}
