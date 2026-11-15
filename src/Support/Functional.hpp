@@ -28,12 +28,3 @@ private:
 	F&& f;
 };
 } // namespace support::functional
-
-namespace support::functional::concepts
-{
-template<class F, class R>
-concept Supplier = std::is_invocable_r_v<R, F>;
-
-template<class F, class R, class T>
-concept Function = std::is_invocable_r_v<R, F, T>;
-} // namespace clap::functional::concepts

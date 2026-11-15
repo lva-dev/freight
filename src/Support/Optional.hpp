@@ -50,8 +50,8 @@ constexpr auto transform_std(const boost::optional<T>& opt, F&& f) -> boost::opt
 }
 
 template<class U, class T, class D, class F>
-	requires support::functional::concepts::Supplier<D, U> &&
-			 support::functional::concepts::Function<F, U, const T&>
+	requires std::is_invocable_r_v<U, F> &&
+			 std::is_invocable_r_v<U, F, const T&>
 auto transform_or_else(const std::optional<T>& opt, D&& d, F&& f) -> U
 {
 	if (opt)
