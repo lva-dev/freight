@@ -307,9 +307,36 @@ static auto parse_init_options(clap::lexer::RawArgs& raw_args,
 static auto parse_run_options(clap::lexer::RawArgs& raw_args,
 	clap::lexer::ArgCursor& arg_cursor) -> ops::RunOptions
 {
-	ops::RunOptions opts {
-		.build_opts = parse_build_options(raw_args, arg_cursor),
+	ops::RunOptions opts {};
+	cli_util::GenericParser parser {
+		.parse_long_callback =
+			[&](auto&, auto&, const auto& flag) {
+				if (flag.name == "release")
+				{
+					opts.build_opts.release = true;
+					return true;
+				}
+
+				return false;
+			},
+		.parse_short_callback =
+			[&](auto&, auto&, auto flag) {
+				if (flag == 'r')
+				{
+					opts.build_opts.release = true;
+					return true;
+				}
+
+				return false;
+			},
+        .parse_pos_callback = [&](auto&, auto&, auto arg){
+            opts.args.emplace_back(arg);
+            return true;
+        },
 	};
+
+	parser.parse(raw_args, arg_cursor);
+
 
 	return opts;
 }

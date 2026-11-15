@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "Workspace.hpp"
 
@@ -32,7 +33,8 @@ void build(GlobalContext& gctx, const BuildOptions& opts);
 struct RunOptions
 {
 	BuildOptions build_opts;
+    std::vector<std::string> args;
 };
 
-void run(GlobalContext& gctx, const RunOptions& opts, std::span<std::string> args = {});
+void run(GlobalContext& gctx, const RunOptions& opts);
 } // namespace freight::ops

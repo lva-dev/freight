@@ -353,8 +353,7 @@ void ops::build(GlobalContext& gctx, [[maybe_unused]] const ops::BuildOptions& o
 }
 
 void ops::run(GlobalContext& gctx,
-	[[maybe_unused]] const ops::RunOptions& opts,
-	[[maybe_unused]] std::span<std::string> args)
+	[[maybe_unused]] const ops::RunOptions& opts)
 {
 	using namespace std::filesystem;
 
@@ -380,6 +379,7 @@ void ops::run(GlobalContext& gctx,
 	error::print_status("  Running", "`{}`", exe_path_relative.native());
 
 	support::process::ProcessBuilder process {exe_path};
+    process.args(opts.args);
 	auto run_result = process.status();
 	if (!run_result.has_value())
 	{
