@@ -1,7 +1,11 @@
 #pragma once
 
 #include <concepts>
+#include <generator>
 #include <ranges>
+#include <type_traits>
+
+#include "Support/Functional.hpp"
 
 namespace support::ranges::concepts
 {
@@ -16,6 +20,19 @@ concept ViewOf =
 
 namespace support::ranges
 {
+
+template<class F, class T = std::invoke_result_t<F>::value_type>
+	requires std::is_invocable_r_v<std::optional<std::invoke_result_t<F>>, F>
+auto iter_optional(F func) -> std::generator<T>
+{
+	for (auto val = func(); val.has_value(); val = func())
+	{
+		co_yield *val;
+	}
+
+	co_return;
+}
+
 template<class R1, class R2>
 void move_back_range(R1& dest, R2& src)
 {
