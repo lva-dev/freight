@@ -382,8 +382,6 @@ void ops::run(GlobalContext& gctx, [[maybe_unused]] const ops::RunOptions& opts)
 
 	assert(!workspace.current().targets().empty());
 
-    // TODO: Implement selecting binary to run for multiple-target projects.
-    
 	CompileResult result;
     if (opts.bin.has_value())
     {
