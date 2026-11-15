@@ -367,7 +367,7 @@ auto freight::GlobalContext::compiler_path() const -> const std::filesystem::pat
 		auto path = search_path("clang++");
 		if (!path.has_value())
 		{
-			// TODO: Error is clang++ isn't installed
+			// TODO: Error if clang++ isn't installed
 			assert(false && "Failed to find clang++");
 		}
 
