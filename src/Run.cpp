@@ -4,6 +4,8 @@
 #include <cassert>
 #include <chrono>
 #include <filesystem>
+#include <span>
+#include <string_view>
 #include <system_error>
 #include <vector>
 
@@ -38,9 +40,7 @@ struct BuildContext
 
 struct BuildRunner
 {
-    const BuildContext *bcx;
-
-    
+	const BuildContext *bcx;
 };
 
 class Linker
@@ -102,13 +102,13 @@ static auto optlevel_to_char(OptLevel level) -> char
 	{
 		return static_cast<char>('0' + static_cast<int>(level));
 	}
-	
-    if (level == OptLevel::LevelS)
+
+	if (level == OptLevel::LevelS)
 	{
 		return 's';
 	}
-	
-    if (level == OptLevel::LevelZ)
+
+	if (level == OptLevel::LevelZ)
 	{
 		return 'z';
 	}
@@ -130,8 +130,8 @@ static auto standard_to_str(Standard standard) -> std::string
 	}
 }
 
-static auto expand_linear_paths(
-	std::span<const std::filesystem::path> paths) -> std::vector<std::filesystem::path>
+static auto expand_linear_paths(std::span<const std::filesystem::path> paths)
+	-> std::vector<std::filesystem::path>
 {
 	using namespace std::filesystem;
 
@@ -201,9 +201,8 @@ auto static compile_unit(const BuildContext& ctx,
 		auto compiler_result = compiler.status();
 		if (!compiler_result.has_value())
 		{
-			error::bail(
-				could_not_execute_process(
-					compiler.get_path().native(), compiler_result.error()));
+			error::bail(could_not_execute_process(
+				compiler.get_path().native(), compiler_result.error()));
 		}
 
 		if (compiler_result->exit_code() != 0)
@@ -278,31 +277,47 @@ static auto to_milliseconds(std::chrono::duration<R, P> duration) -> float
 
 static auto build_package(const Workspace& workspace,
 	const Package& package,
-	std::vector<std::string> targets_to_build = {}) -> CompileResult
+	bool release,
+	std::span<const std::string> targets_to_build = {}) -> CompileResult
 {
 	using std::chrono::steady_clock;
 
-	error::print_status("Compiling", "{} ({})", package.name(), package.root().native());
+	// TODO: Check fingerprints to determine if a build/rebuild is needed and what to
+	// build. For now, always rebuild the entire project
+
+	bool should_build = true;
+
+	if (should_build)
+	{
+		error::print_status(
+			"Compiling", "{} ({})", package.name(), package.root().native());
+	}
 
 	auto start_time = steady_clock::now();
 
 	BuildContext bctx {.gctx = &workspace.gctx(), .workspace = &workspace, .roots = {}};
 
-	Profile profile = Profile::dev();
+	Profile profile;
+	if (release)
+	{
+		profile = Profile::release();
+	}
+	else
+	{
+		profile = Profile::dev();
+	}
 
 	for (const auto& target : package.targets())
 	{
-		if (!targets_to_build.empty() &&
-			!std::ranges::contains(targets_to_build, target.name))
+		if (targets_to_build.empty() ||
+			std::ranges::contains(targets_to_build, target.name))
 		{
-			continue;
+			bctx.roots.emplace_back(Unit {
+				.package = &package,
+				.target = &target,
+				.profile = &profile,
+			});
 		}
-
-		bctx.roots.emplace_back(Unit {
-			.package = &package,
-			.target = &target,
-			.profile = &profile,
-		});
 	}
 
 	CompileOptions opts = {
@@ -349,11 +364,17 @@ void ops::build(GlobalContext& gctx, [[maybe_unused]] const ops::BuildOptions& o
 	using namespace std::filesystem;
 
 	auto workspace = Workspace::open(gctx.cwd() / "Freight.toml", gctx);
-	build_package(workspace, workspace.current());
+    if (opts.bin.has_value())
+    {
+        build_package(workspace, workspace.current(), opts.release, std::span{&*opts.bin, 1});
+    }
+    else
+    {
+        build_package(workspace, workspace.current(), opts.release);
+    }
 }
 
-void ops::run(GlobalContext& gctx,
-	[[maybe_unused]] const ops::RunOptions& opts)
+void ops::run(GlobalContext& gctx, [[maybe_unused]] const ops::RunOptions& opts)
 {
 	using namespace std::filesystem;
 
@@ -361,28 +382,28 @@ void ops::run(GlobalContext& gctx,
 
 	assert(!workspace.current().targets().empty());
 
+    // TODO: Implement selecting binary to run for multiple-target projects.
+    
 	CompileResult result;
-	if (workspace.current().targets().size() == 1)
-	{
-		result = build_package(workspace, workspace.current());
-	}
-	else
-	{
-		// TODO: Implement target selection logic for multiple-target projects.
-		// For now, assert false
-		// compiliation = build_package(ws, ws.current(), /* targets to run */);
-		assert(false);
-	}
+    if (opts.bin.has_value())
+    {
+        result = build_package(workspace, workspace.current(), opts.release, std::span{&*opts.bin, 1});
+    }
+    else
+    {
+        result = build_package(workspace, workspace.current(), opts.release);
+    }
 
 	auto exe_path = result.binaries.front();
 	auto exe_path_relative = relative(result.binaries.front(), gctx.cwd());
 	error::print_status("  Running", "`{}`", exe_path_relative.native());
 
 	support::process::ProcessBuilder process {exe_path};
-    process.args(opts.args);
+	process.args(opts.args);
 	auto run_result = process.status();
 	if (!run_result.has_value())
 	{
+		// TODO: Issue "failed to start child" error
 	}
 
 	exit(run_result->exit_code());

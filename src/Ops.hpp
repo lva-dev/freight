@@ -26,13 +26,15 @@ void new_(GlobalContext& gctx, const NewOptions& opts);
 struct BuildOptions
 {
 	bool release = false;
+    std::optional<std::string> bin;
 };
 
 void build(GlobalContext& gctx, const BuildOptions& opts);
 
 struct RunOptions
 {
-	BuildOptions build_opts;
+	bool release = false;
+    std::optional<std::string> bin;
     std::vector<std::string> args;
 };
 

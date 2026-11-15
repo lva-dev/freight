@@ -313,7 +313,7 @@ static auto parse_run_options(clap::lexer::RawArgs& raw_args,
 			[&](auto&, auto&, const auto& flag) {
 				if (flag.name == "release")
 				{
-					opts.build_opts.release = true;
+					opts.release = true;
 					return true;
 				}
 
@@ -323,7 +323,7 @@ static auto parse_run_options(clap::lexer::RawArgs& raw_args,
 			[&](auto&, auto&, auto flag) {
 				if (flag == 'r')
 				{
-					opts.build_opts.release = true;
+					opts.release = true;
 					return true;
 				}
 
