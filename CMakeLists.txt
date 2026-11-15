@@ -53,12 +53,14 @@ elseif(CMAKE_BUILD_TYPE EQUAL "MinSizeRel")
     target_compile_options("${TARGET}" -Oz)
 endif()
 
-target_include_directories("${TARGET}" PRIVATE "${VENDOR_DIRECTORY}/tomlplusplus/include/")
+add_subdirectory(${VENDOR_DIRECTORY}/clap)
+target_link_libraries("${TARGET}" PRIVATE clap)
 
 target_link_libraries("${TARGET}" PRIVATE Microsoft.GSL::GSL)
 
-add_subdirectory(vendor/Clap)
-target_link_libraries("${TARGET}" PRIVATE clap)
+add_subdirectory(${VENDOR_DIRECTORY}/semver)
+
+target_include_directories("${TARGET}" PRIVATE "${VENDOR_DIRECTORY}/tomlplusplus/include")
 
 # set(TESTS_DIRECTORY "${CMAKE_SOURCE_DIR}/tests")
 # include(CTest)
