@@ -29,7 +29,8 @@ static auto bail_with_missing_required_arg(std::string_view arg)
 	error::bail("the required argument '\033[36m{}\033[39m' was not provided", arg);
 }
 
-[[maybe_unused]] static auto bail_with_missing_required_subcommand(std::string_view cmd)
+[[maybe_unused]]
+static auto bail_with_missing_required_subcommand(std::string_view cmd)
 {
 	error::bail(
 		"'\033[32m{}\033[39m' requires a subcommand but one was not provided", cmd);
@@ -37,7 +38,17 @@ static auto bail_with_missing_required_arg(std::string_view arg)
 
 static auto bail_with_unexpected_argument(std::string_view arg)
 {
-	error::bail(std::format("unexpected argument '\033[36m{}\033[39m' found", arg));
+	error::bail("unexpected argument '\033[36m{}\033[39m' found", arg);
+};
+
+static auto bail_with_unexpected_long_argument(std::string_view arg)
+{
+	error::bail("unexpected argument '\033[36m--{}\033[39m' found", arg);
+};
+
+static auto bail_with_unexpected_short_argument(char arg)
+{
+	error::bail("unexpected argument '\033[36m-{}\033[39m' found", arg);
 };
 
 static auto raw_args_to_generator(clap::lexer::RawArgs& raw_args,
@@ -72,7 +83,7 @@ static auto default_parse_pos_callback(clap::lexer::RawArgs&,
 	return false;
 };
 
-struct GenericParser
+struct Parser
 {
 	using Lc = std::function<bool(clap::lexer::RawArgs&,
 		clap::lexer::ArgCursor&,
@@ -96,7 +107,7 @@ private:
 		const clap::lexer::ParsedArg& arg) const -> bool;
 };
 
-auto GenericParser::parse(clap::lexer::RawArgs& raw_args,
+auto Parser::parse(clap::lexer::RawArgs& raw_args,
 	clap::lexer::ArgCursor& arg_cursor) const
 {
 	bool found_escape = false;
@@ -129,7 +140,7 @@ auto GenericParser::parse(clap::lexer::RawArgs& raw_args,
 	}
 }
 
-auto GenericParser::try_parse_long(clap::lexer::RawArgs& raw_args,
+auto Parser::try_parse_long(clap::lexer::RawArgs& raw_args,
 	clap::lexer::ArgCursor& arg_cursor,
 	const clap::lexer::ParsedArg& arg) const -> bool
 {
@@ -140,13 +151,13 @@ auto GenericParser::try_parse_long(clap::lexer::RawArgs& raw_args,
 			return true;
 		}
 
-		bail_with_unexpected_argument(std::format("--{}", as_long->name));
+		bail_with_unexpected_long_argument(as_long->name);
 	}
 
 	return false;
 }
 
-auto GenericParser::try_parse_short(clap::lexer::RawArgs& raw_args,
+auto Parser::try_parse_short(clap::lexer::RawArgs& raw_args,
 	clap::lexer::ArgCursor& arg_cursor,
 	const clap::lexer::ParsedArg& arg) const -> bool
 {
@@ -159,7 +170,7 @@ auto GenericParser::try_parse_short(clap::lexer::RawArgs& raw_args,
 				return true;
 			}
 
-			bail_with_unexpected_argument(std::format("-{}", flag));
+			bail_with_unexpected_short_argument(flag);
 		}
 	}
 
@@ -170,26 +181,33 @@ auto GenericParser::try_parse_short(clap::lexer::RawArgs& raw_args,
 struct MainOptions
 {
 	bool help = false;
+	bool version = false;
 	std::optional<std::string> command;
 };
 
 static auto parse_main_options(clap::lexer::RawArgs& raw_args,
 	clap::lexer::ArgCursor& arg_cursor) -> MainOptions
 {
+	using namespace clap::lexer;
+
 	MainOptions opts {};
 
-	for (auto arg : cli_util::raw_args_to_generator(raw_args, arg_cursor))
+	for (ParsedArg arg : cli_util::raw_args_to_generator(raw_args, arg_cursor))
 	{
 		if (auto as_long = arg.to_long(); as_long.has_value())
 		{
-			if (as_long->name == "help")
+			std::string_view name = as_long->name;
+			if (name == "help")
 			{
 				opts.help = true;
 			}
+			else if (name == "version")
+			{
+				opts.version = true;
+			}
 			else
 			{
-				cli_util::bail_with_unexpected_argument(
-					std::format("--{}", as_long->name));
+				cli_util::bail_with_unexpected_long_argument(name);
 			}
 
 			continue;
@@ -203,9 +221,13 @@ static auto parse_main_options(clap::lexer::RawArgs& raw_args,
 				{
 					opts.help = true;
 				}
+				else if (flag == 'V')
+				{
+					opts.version = true;
+				}
 				else
 				{
-					cli_util::bail_with_unexpected_argument(std::format("-{}", flag));
+					cli_util::bail_with_unexpected_short_argument(flag);
 				}
 			}
 
@@ -215,7 +237,7 @@ static auto parse_main_options(clap::lexer::RawArgs& raw_args,
 		if (!opts.command.has_value())
 		{
 			opts.command = arg.to_value();
-            break;
+			break;
 		}
 	}
 
@@ -226,7 +248,7 @@ static auto parse_build_options(clap::lexer::RawArgs& raw_args,
 	clap::lexer::ArgCursor& arg_cursor) -> ops::BuildOptions
 {
 	ops::BuildOptions opts {};
-	cli_util::GenericParser parser {
+	cli_util::Parser parser {
 		.parse_long_callback =
 			[&](auto&, auto&, const auto& flag) {
 				if (flag.name == "release")
@@ -259,7 +281,7 @@ static auto parse_new_options(clap::lexer::RawArgs& raw_args,
 	ops::NewOptions opts {};
 	bool found_path = false;
 
-	cli_util::GenericParser parser {
+	cli_util::Parser parser {
 		.parse_pos_callback = [&](auto&, auto&, auto arg) {
 			if (!found_path)
 			{
@@ -287,7 +309,7 @@ static auto parse_init_options(clap::lexer::RawArgs& raw_args,
 {
 	ops::InitOptions opts {};
 
-	cli_util::GenericParser parser {
+	cli_util::Parser parser {
 		.parse_pos_callback = [&](auto&, auto&, auto arg) {
 			if (!opts.path.has_value())
 			{
@@ -308,7 +330,7 @@ static auto parse_run_options(clap::lexer::RawArgs& raw_args,
 	clap::lexer::ArgCursor& arg_cursor) -> ops::RunOptions
 {
 	ops::RunOptions opts {};
-	cli_util::GenericParser parser {
+	cli_util::Parser parser {
 		.parse_long_callback =
 			[&](auto&, auto&, const auto& flag) {
 				if (flag.name == "release")
@@ -329,19 +351,19 @@ static auto parse_run_options(clap::lexer::RawArgs& raw_args,
 
 				return false;
 			},
-        .parse_pos_callback = [&](auto&, auto&, auto arg){
-            opts.args.emplace_back(arg);
-            return true;
-        },
+		.parse_pos_callback =
+			[&](auto&, auto&, auto arg) {
+				opts.args.emplace_back(arg);
+				return true;
+			},
 	};
 
 	parser.parse(raw_args, arg_cursor);
 
-
 	return opts;
 }
 
-auto print_help_and_exit()
+void print_help_and_exit()
 {
 	std::print(
 		"Usage: freight [OPTIONS] [COMMAND]\n"
@@ -358,6 +380,12 @@ auto print_help_and_exit()
 	std::exit(0);
 }
 
+void print_version_and_exit()
+{
+	std::println("freight 0.1.0");
+	std::exit(0);
+}
+
 auto main(int argc, char **argv) -> int
 {
 	std::span<char *> args_span {argv, static_cast<std::size_t>(argc)};
@@ -365,9 +393,13 @@ auto main(int argc, char **argv) -> int
 	auto arg_cursor = raw_args.cursor();
 
 	auto main_opts = parse_main_options(raw_args, arg_cursor);
-	if (main_opts.help || !main_opts.command.has_value())
+	if (main_opts.help || (!main_opts.version && !main_opts.command.has_value()))
 	{
 		print_help_and_exit();
+	}
+	else if (main_opts.version)
+	{
+		print_version_and_exit();
 	}
 
 	auto gctx = GlobalContext::create(std::filesystem::current_path());
