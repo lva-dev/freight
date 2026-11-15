@@ -6,8 +6,8 @@
 #include <utility>
 #include <vector>
 
-#include "Toml.hpp"
-#include "Support/Ranges.hpp"
+#include <Toml.hpp>
+#include <Support/Ranges.hpp>
 
 namespace freight
 {
@@ -39,7 +39,7 @@ struct Profile
 	std::string name;
 	// The relative path of this profile's subdirectory in `target/`
 	std::filesystem::path target_subdir = {};
-	OptLevel optLevel;
+	OptLevel opt_level;
 	DebugInfo debug;
 	// If false, defines the `NDEBUG` macro
 	bool debug_assertions = true;
@@ -51,7 +51,7 @@ struct Profile
 		return {
 			.name = "dev",
 			.target_subdir = "debug",
-			.optLevel = OptLevel::Level0,
+			.opt_level = OptLevel::Level0,
 			.debug = DebugInfo::Level3,
 			.debug_assertions = true,
 			.incremental = true,
@@ -64,7 +64,7 @@ struct Profile
 		return {
 			.name = "release",
 			.target_subdir = "release",
-			.optLevel = OptLevel::Level3,
+			.opt_level = OptLevel::Level3,
 			.debug = DebugInfo::Level0,
 			.debug_assertions = false,
 			.incremental = false,
@@ -145,7 +145,7 @@ public:
 	[[nodiscard]]
 	auto manifest_path() const -> const std::filesystem::path&
 	{
-		return manifestPath;
+		return manifest_path_;
 	}
 
 	[[nodiscard]]
@@ -179,11 +179,11 @@ public:
 	}
 private:
 	Manifest manifest_;
-	std::filesystem::path manifestPath;
+	std::filesystem::path manifest_path_;
 
 	explicit Package(Manifest&& manifest, std::filesystem::path manifest_path)
 		: manifest_(std::move(manifest))
-		, manifestPath {std::move(manifest_path)}
+		, manifest_path_ {std::move(manifest_path)}
 	{}
 };
 
@@ -206,7 +206,7 @@ public:
 	auto compiler_path() const -> const std::filesystem::path&;
 private:
 	std::filesystem::path cwd_;
-	std::filesystem::path compilerPath;
+	std::filesystem::path compiler_path_;
 
 	explicit GlobalContext(std::filesystem::path&& cwd) : cwd_ {std::move(cwd)}
 	{}

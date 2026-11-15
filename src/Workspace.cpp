@@ -356,10 +356,10 @@ auto freight::GlobalContext::compiler_path() const -> const std::filesystem::pat
 {
 	static std::filesystem::path CACHED_PATH;
 
-	if (!compilerPath.empty())
+	if (!compiler_path_.empty())
 	{
 		CACHED_PATH.clear();
-		return compilerPath;
+		return compiler_path_;
 	}
 
 	if (CACHED_PATH.empty())

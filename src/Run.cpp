@@ -307,7 +307,7 @@ static auto build_package(const Workspace& workspace,
 
 	CompileOptions opts = {
 		.debug_level = profile.debug,
-		.opt_level = profile.optLevel,
+		.opt_level = profile.opt_level,
 		.standard = package.standard(),
 	};
 
