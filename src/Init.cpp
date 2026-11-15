@@ -5,8 +5,10 @@
 #include "Toml.hpp"
 #include "Workspace.hpp"
 #include "Support/Io.hpp"
+#include "Support/Optional.hpp"
 
 using namespace freight;
+using namespace support;
 
 static auto cause_failed_to_create_dir(const std::filesystem::path& dir,
 	const std::error_code& err) -> std::string
@@ -86,32 +88,34 @@ static auto has_manifest(const std::filesystem::path& dir) -> bool
 	return std::filesystem::exists(manifest_path);
 }
 
+static auto get_package_dir(GlobalContext& gctx, boost::optional<const std::string&> path)
+	-> std::filesystem::path
+{
+	if (path.has_value())
+	{
+		std::filesystem::path given_path = *path;
+		return given_path.is_absolute() ? given_path : gctx.cwd() / given_path;
+	}
+
+	return gctx.cwd();
+};
+
 void ops::init(GlobalContext& gctx, const ops::InitOptions& opts)
 {
 	error::print_status("Creating", "binary (application) package");
 
-	std::filesystem::path cwd;
-	if (opts.path.has_value())
-	{
-        std::filesystem::path given_path = *opts.path;
-        cwd = given_path.is_absolute() ? given_path : gctx.cwd() / given_path;
-    }
-	else
-	{
-        cwd = gctx.cwd();
-	}
+	std::filesystem::path dir = get_package_dir(gctx, optional::as_cref(opts.path));
+	auto name = dir.filename();
 
-	std::string name = cwd.filename();
-
-	if (has_manifest(cwd))
+	if (has_manifest(dir))
 	{
 		error::bail("`freight init` cannot be run on existing Freight packages");
 	}
 
-	create_directory_or_bail(cwd, name);
+	create_directory_or_bail(dir, name);
 
-	Manifest manifest = get_default_manifest(gctx, cwd);
-	auto package = Package::create(std::move(manifest), cwd / "Freight.toml");
+	Manifest manifest = get_default_manifest(gctx, dir);
+	auto package = Package::create(std::move(manifest), dir / "Freight.toml");
 	initialize_package(package);
 }
 
