@@ -31,14 +31,26 @@ static void create_directory_or_bail(const std::filesystem::path dir,
 	}
 }
 
+static auto standard_to_int(Standard standard) -> std::uint32_t
+{
+	// NOLINTBEGIN(readability-magic-numbers, cppcoreguidelines-avoid-magic-numbers)
+	switch (standard)
+	{
+	case freight::Standard::Cpp23:
+		return 23;
+	}
+	// NOLINTEND(readability-magic-numbers, cppcoreguidelines-avoid-magic-numbers)
+}
+
 static auto create_manifest_file(const Package& package) -> bool
 {
 	auto text = std::format(
 		"[package]\n"
 		"name = \"{}\"\n"
 		"version = \"0.1.0\"\n"
-		"standard = \"23\"",
-		package.name());
+		"standard = \"{}\"",
+		package.name(),
+		standard_to_int(package.standard()));
 
 	return support::io::write_file(package.manifest_path(), text);
 }
